@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Parcoursup</string>
+    
+    <string name="nav_formations">Formations</string>
+    <string name="nav_favorites">Favoris</string>
+    <string name="nav_map">Carte</string>
+    
+    <string name="search_hint">Rechercher une formation…</string>
+    <string name="all_filieres">Toutes les filières</string>
+    <string name="close">Fermer</string>
+    <string name="select_filiere">Sélectionner une filière</string>
+    
+    <string name="stats_2024">Statistiques 2024</string>
+    <string name="stats_establishments">Établissements</string>
+    <string name="stats_avg_capacity">Capacité moy.</string>
+    <string name="stats_avg_access_rate">Taux accès moy.</string>
+    <string name="stats_avg_grade">Moyenne bac</string>
+    <string name="average_bac">Moyenne bac</string>
+    
+    <string name="capacity">Capacité</string>
+    <string name="wishes">Vœux</string>
+    <string name="admitted">Admis</string>
+    <string name="access_rate">Taux d\'accès</string>
+    <string name="access_format">Accès: %1$.0f%%</string>
+    
+    <string name="add_to_favorites">Ajouter aux favoris</string>
+    <string name="remove_from_favorites">Retirer des favoris</string>
+    
+    <string name="no_favorites">Aucun favori</string>
+    <string name="add_formations_to_favorites">Ajoutez des formations à vos favoris</string>
+    <string name="my_favorites">Mes favoris (%1$d)</string>
+    
+    <string name="gender_distribution">Répartition par genre</string>
+    <string name="women">Femmes</string>
+    <string name="men">Hommes</string>
+    
+    <string name="bac_distribution">Répartition par bac d\'origine</string>
+    <string name="bac_general">Bac Général</string>
+    <string name="bac_tech">Bac Technologique</string>
+    <string name="bac_pro">Bac Professionnel</string>
+    
+    <string name="bac_mentions">Mentions au bac</string>
+    <string name="mention_none">Sans mention</string>
+    <string name="mention_ab">Assez Bien</string>
+    <string name="mention_b">Bien</string>
+    <string name="mention_tb">Très Bien</string>
+    <string name="mention_tbf">Très Bien Félicitations</string>
+    
+    <string name="location">Localisation</string>
+    <string name="details">Détails</string>
+
+    <string name="error_loading_data">Erreur de chargement des données</string>
+    <string name="back">Retour</string>
+    <string name="retry">Réessayer</string>
+    
+    <string name="loading">Chargement…</string>
+    <string name="error_unknown">Erreur inconnue</string>
+    <string name="error_search">Erreur de recherche</string>
+    <string name="error_formation_not_found">Formation non trouvée</string>
+    <string name="error_loading">Erreur de chargement</string>
+    <string name="error_map_loading">Erreur de chargement de la carte</string>
+    
+    <string name="establishment_unknown">Établissement inconnu</string>
+    <string name="formation">Formation</string>
+    <string name="not_available">N/A</string>
+</resources>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Parcoursup</string>
+    
+    <string name="nav_formations">Courses</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_map">Map</string>
+    
+    <string name="search_hint">Search for a course…</string>
+    <string name="all_filieres">All fields</string>
+    <string name="close">Close</string>
+    <string name="select_filiere">Select a field</string>
+    
+    <string name="stats_2024">2024 Statistics</string>
+    <string name="stats_establishments">Establishments</string>
+    <string name="stats_avg_capacity">Avg. capacity</string>
+    <string name="stats_avg_access_rate">Avg. access rate</string>
+    <string name="stats_avg_grade">Avg. high school grade</string>
+    <string name="average_bac">Avg. high school grade</string>
+    
+    <string name="capacity">Capacity</string>
+    <string name="wishes">Wishes</string>
+    <string name="admitted">Admitted</string>
+    <string name="access_rate">Access rate</string>
+    <string name="access_format">Access: %1$.0f%%</string>
+    
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+    
+    <string name="no_favorites">No favorites</string>
+    <string name="add_formations_to_favorites">Add courses to your favorites</string>
+    <string name="my_favorites">My favorites (%1$d)</string>
+    
+    <string name="gender_distribution">Gender distribution</string>
+    <string name="women">Women</string>
+    <string name="men">Men</string>
+    
+    <string name="bac_distribution">Distribution by diploma origin</string>
+    <string name="bac_general">General Diploma</string>
+    <string name="bac_tech">Technological Diploma</string>
+    <string name="bac_pro">Professional Diploma</string>
+    
+    <string name="bac_mentions">Diploma honors</string>
+    <string name="mention_none">No honors</string>
+    <string name="mention_ab">Fair</string>
+    <string name="mention_b">Good</string>
+    <string name="mention_tb">Very Good</string>
+    <string name="mention_tbf">Excellent</string>
+    
+    <string name="location">Location</string>
+    <string name="details">Details</string>
+    <string name="retry">Retry</string>
+    
+    <string name="error_loading_data">Error loading data</string>
+    <string name="back">Back</string>
+
+    <string name="loading">Loading…</string>
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_search">Search error</string>
+    <string name="error_formation_not_found">Course not found</string>
+    <string name="error_loading">Loading error</string>
+    <string name="error_map_loading">Map loading error</string>
+    
+    <string name="establishment_unknown">Unknown establishment</string>
+    <string name="formation">Course</string>
+    <string name="not_available">N/A</string>
+</resources>

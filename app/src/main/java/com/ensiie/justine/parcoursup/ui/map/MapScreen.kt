@@ -137,7 +137,7 @@ fun MapLibre(
 
         val source = rememberGeoJsonSource(
             GeoJsonData.JsonString(fcJson),
-            GeoJsonOptions(cluster = true, clusterRadius = 32, clusterMaxZoom = 14, clusterMinPoints = 3)
+            GeoJsonOptions(cluster = true, clusterRadius = 50, clusterMaxZoom = 16, clusterMinPoints = 2)
         )
 
         CircleLayer(

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -416,6 +417,11 @@ fun FormationMap(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                }
+            }
+            .pointerInput(Unit) {
                 detectTapGestures { /* Consume taps */ }
             }
     ) {
@@ -448,7 +454,7 @@ fun FormationMap(
         )
 
             // Marker icon
-            org.maplibre.compose.layers.SymbolLayer(
+            SymbolLayer(
                 id = "marker-icon",
                 source = source,
                 iconImage = image(marker),

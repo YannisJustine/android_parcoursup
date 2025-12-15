@@ -8,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
 import org.maplibre.compose.map.MaplibreMap
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
@@ -35,7 +34,6 @@ import org.maplibre.compose.expressions.dsl.step
 import org.maplibre.compose.expressions.dsl.asNumber
 import org.maplibre.compose.expressions.dsl.asString
 import org.maplibre.compose.expressions.dsl.not
-import org.maplibre.compose.expressions.dsl.offset
 import org.maplibre.compose.expressions.dsl.image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
@@ -47,6 +45,7 @@ import org.maplibre.spatialk.geojson.FeatureCollection
 import org.maplibre.spatialk.geojson.Point
 import org.maplibre.spatialk.geojson.toJson
 import kotlinx.serialization.json.JsonPrimitive
+import org.maplibre.compose.expressions.value.SymbolAnchor
 
 @Composable
 fun MapScreen(
@@ -92,17 +91,15 @@ fun MapLibre(
     formations: List<FormationMap>,
     onMarkerClick: (String) -> Unit
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Compose-based MapLibre implementation (requires MapLibre Compose bindings).
-    val first = formations.firstOrNull()
-    val initialLat = first?.etabGps?.lat ?: 46.603354
-    val initialLon = first?.etabGps?.lon ?: 1.888334
+    // Calculate bounds to fit all formations
+    val parisCoordinates = doubleArrayOf(48.856614, 2.3522219)
+    val (centerLat, centerLon, initialZoom) = Triple(parisCoordinates[0], parisCoordinates[1], 10.0)
 
-    val cameraState   = rememberCameraState (
-        CameraPosition(target = Position(initialLat, initialLon), zoom = 6.0)
-        )
+    val cameraState = rememberCameraState(
+        CameraPosition(target = Position( centerLon, centerLat), zoom = initialZoom)
+    )
 
     MaplibreMap(
         baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
@@ -140,7 +137,7 @@ fun MapLibre(
 
         val source = rememberGeoJsonSource(
             GeoJsonData.JsonString(fcJson),
-            GeoJsonOptions(cluster = true, clusterRadius = 32, clusterMaxZoom = 16, clusterMinPoints = 3)
+            GeoJsonOptions(cluster = true, clusterRadius = 32, clusterMaxZoom = 14, clusterMinPoints = 3)
         )
 
         CircleLayer(
@@ -156,6 +153,8 @@ fun MapLibre(
                 25 to const(20.dp),
                 100 to const(30.dp),
                 500 to const(40.dp),
+                1000 to const(50.dp),
+                5000 to const(60.dp),
             ),
             onClick = { feats ->
                 feats
@@ -181,22 +180,20 @@ fun MapLibre(
             id = "cluster-count",
             source = source,
             filter = feature.has("point_count"),
-            textField = format(
-                span(feature["point_count"].asString())
-            ),
+            textField = feature["point_count_abbreviated"].asString(),
             textFont = const(listOf("Noto Sans Regular")),
-            textColor = const(androidx.compose.ui.graphics.Color.White),
+            textColor = const(MaterialTheme.colorScheme.onBackground),
         )
 
-        org.maplibre.compose.layers.SymbolLayer(
+        SymbolLayer(
             id = "unclustered-marker",
             source = source,
             filter = !feature.has("point_count"),
             iconImage = image(
-                value = painterResource(R.drawable.marker),
-                size = DpSize(30.dp, 42.dp)
+                value = painterResource(R.drawable.marker)
             ),
             iconAllowOverlap = const(true),
+            iconAnchor = const(SymbolAnchor.Bottom),
             onClick = { feats ->
                 feats.firstOrNull()?.let { f ->
                     val id = (f.properties?.get("id") as? JsonPrimitive)?.content

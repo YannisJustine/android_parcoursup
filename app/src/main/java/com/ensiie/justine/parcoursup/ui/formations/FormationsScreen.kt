@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.Formation
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,11 +61,30 @@ fun FormationsScreen(
 
             is FormationsUiState.Success -> {
                 val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+                val listState = rememberLazyListState()
 
+                LaunchedEffect(Unit) {
+                    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+                        .map { visibleItems ->
+                            val lastVisibleItemIndex = visibleItems.lastOrNull()?.index ?: -1
+                            val totalItems = listState.layoutInfo.totalItemsCount
+                            Pair(lastVisibleItemIndex, totalItems)
+                        }
+                        .collect { (lastVisibleItemIndex, totalItems) ->
+                            if (state.formations.isEmpty()) {
+                                return@collect
+                            }
+
+                            if (lastVisibleItemIndex >= totalItems - 1) {
+                                viewModel.loadMoreFormations()
+                            }
+                        }
+                }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    state = listState
                 ) {
 
                     items(state.formations, key = { it.id }) { formation ->

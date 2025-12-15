@@ -7,11 +7,8 @@ import com.ensiie.justine.parcoursup.data.model.FormationMap
 import com.ensiie.justine.parcoursup.data.model.FormationStats
 import com.ensiie.justine.parcoursup.data.network.ParcoursupApiService
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class FormationRepository @Inject constructor(
+class FormationRepository(
     private val apiService: ParcoursupApiService,
     private val favoriteDao: FavoriteFormationDao
 ) {

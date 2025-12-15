@@ -5,39 +5,38 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
-sealed interface Route {
-    @Serializable
-    data object FormationsList : Route
-    
-    @Serializable
-    data object Favorites : Route
-    
-    @Serializable
-    data object GlobalMap : Route
-    
-    @Serializable
-    data class FormationDetail(val id: String) : Route
-}
+@Serializable
+data object FormationsList : NavKey
+
+@Serializable
+data object Favorites : NavKey
+
+@Serializable
+data object GlobalMap : NavKey
+
+@Serializable
+data class FormationDetail(val id: String) : NavKey
 
 enum class TopLevelDestination(
-    val route: Route,
+    val route: NavKey,
     val icon: ImageVector,
     val label: String
 ) {
     FORMATIONS(
-        route = Route.FormationsList,
+        route = FormationsList,
         icon = Icons.Default.Search,
         label = "Formations"
     ),
     FAVORITES(
-        route = Route.Favorites,
+        route = Favorites,
         icon = Icons.Default.Favorite,
         label = "Favoris"
     ),
     MAP(
-        route = Route.GlobalMap,
+        route = GlobalMap,
         icon = Icons.Default.Place,
         label = "Carte"
     )

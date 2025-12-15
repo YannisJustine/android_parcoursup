@@ -2,7 +2,6 @@ package com.ensiie.justine.parcoursup.ui.detail
 
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +44,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.hilt.navigation.compose.hiltViewModel
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.Formation
 import kotlinx.serialization.json.JsonPrimitive
@@ -79,7 +79,7 @@ import org.maplibre.spatialk.geojson.toJson
 fun FormationDetailScreen(
     id: String,
     onNavigateBack: () -> Unit,
-    viewModel: FormationDetailViewModel = hiltViewModel()
+    viewModel: FormationDetailViewModel = koinViewModel { parametersOf(id) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)

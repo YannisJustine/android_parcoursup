@@ -1,25 +1,16 @@
 package com.ensiie.justine.parcoursup.ui.detail
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
-import com.ensiie.justine.parcoursup.navigation.Route
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class FormationDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+class FormationDetailViewModel(
+    private val recordId: String,
     private val repository: FormationRepository
 ) : ViewModel() {
-    
-    private val args = savedStateHandle.toRoute<Route.FormationDetail>()
-    private val recordId = args.id
     
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()

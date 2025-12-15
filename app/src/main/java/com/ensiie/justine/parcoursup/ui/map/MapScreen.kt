@@ -18,11 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.FormationMap
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import org.koin.compose.viewmodel.koinViewModel
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.asNumber
@@ -54,7 +54,7 @@ import org.maplibre.spatialk.geojson.toJson
 @Composable
 fun MapScreen(
     onNavigateToFormations: (String) -> Unit,
-    viewModel: MapViewModel = hiltViewModel()
+    viewModel: MapViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -152,7 +152,7 @@ fun MapLibre(
             color = step(
                 input = feature["point_count"].asNumber(),
                 fallback = const(androidx.compose.ui.graphics.Color(0xFF51BBD6)),
-                100 to const(androidx.compose.ui.graphics.Color(0xFFF1F075)),
+                100 to const(androidx.compose.ui.graphics.Color(0xFF1E3A8A)),
                 750 to const(androidx.compose.ui.graphics.Color(0xFFF28CB1))
             ),
 

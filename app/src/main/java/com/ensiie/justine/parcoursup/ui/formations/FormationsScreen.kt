@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.Formation
 import kotlinx.coroutines.flow.map
@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun FormationsScreen(
     onNavigateToDetail: (String) -> Unit,
-    viewModel: FormationsViewModel = hiltViewModel()
+    viewModel: FormationsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()

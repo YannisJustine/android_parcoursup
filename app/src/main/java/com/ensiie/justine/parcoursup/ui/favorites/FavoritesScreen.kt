@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,6 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.FavoriteFormation
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTag
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagSize
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagType
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 
 @Composable
 fun FavoritesScreen(
@@ -31,7 +42,7 @@ fun FavoritesScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                DsfrCircularProgressIndicator()
             }
         }
         
@@ -50,15 +61,13 @@ fun FavoritesScreen(
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                     )
-                    Text(
+                    DsfrText(
                         text = stringResource(R.string.no_favorites),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        textStyle = DsfrTextStyle.HeadingMd
                     )
-                    Text(
+                    DsfrText(
                         text = stringResource(R.string.add_formations_to_favorites),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        textStyle = DsfrTextStyle.BodyMd
                     )
                 }
             }
@@ -96,7 +105,7 @@ fun FavoriteCard(
     onClick: () -> Unit,
     onRemove: () -> Unit
 ) {
-    Card(
+    DsfrCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -109,40 +118,39 @@ fun FavoriteCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                DsfrText(
                     text = favorite.etablissement,
-                    style = MaterialTheme.typography.titleMedium
+                    textStyle = DsfrTextStyle.HeadingMd
                 )
-                Text(
+                DsfrText(
                     text = favorite.formationDetaillee,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    textStyle = DsfrTextStyle.BodySm,
+                    color = DsfrTextColor.Mention
                 )
-                Text(
+                DsfrText(
                     text = "${favorite.ville} - ${favorite.departement}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    textStyle = DsfrTextStyle.BodyXs,
+                    color = DsfrTextColor.Label
                 )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.secondaryContainer
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = favorite.filiere,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall
+                    DsfrTag(
+                        favorite.filiere,
+                        type = DsfrTagType.Primary,
+                        size = DsfrTagSize.Small
                     )
                 }
             }
-            
+
             IconButton(onClick = onRemove) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = Icons.Filled.Favorite,
                     contentDescription = stringResource(R.string.remove_from_favorites),
-                    tint = MaterialTheme.colorScheme.error
+                    tint =DSFRTheme.colors.error
                 )
             }
         }

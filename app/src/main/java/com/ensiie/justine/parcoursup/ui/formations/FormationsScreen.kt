@@ -4,19 +4,38 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.Formation
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrAlertDialog
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrFilterChip
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrIconButton
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTag
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagSize
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagType
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextButton
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextField
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,15 +49,19 @@ fun FormationsScreen(
     val contratsEtab by viewModel.contratsEtab.collectAsState()
     val selectedFiliere by viewModel.selectedFiliere.collectAsState()
     val selectedTypeEtab by viewModel.selectedTypeEtab.collectAsState()
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
 
     var showFiliereDialog by remember { mutableStateOf(false) }
     var showContratEtabDialog by remember { mutableStateOf(false) }
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         SearchBar(
             query = searchQuery,
             onQueryChange = viewModel::searchFormations,
             onFiliereClick = { showFiliereDialog = true },
+            onFilterClick = { showBottomSheet = true },
             selectedFiliere = selectedFiliere,
             onApprentissageClick = { showContratEtabDialog = true },
             selectedTypeEtab = selectedTypeEtab,
@@ -53,7 +76,7 @@ fun FormationsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    DsfrCircularProgressIndicator()
                 }
             }
 
@@ -84,7 +107,7 @@ fun FormationsScreen(
                                     .padding(16.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                CircularProgressIndicator()
+                                DsfrCircularProgressIndicator()
                             }
                         }
                     } else if (state.formations.isNotEmpty()) {
@@ -110,7 +133,25 @@ fun FormationsScreen(
             }
         }
     }
-
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showBottomSheet = false
+            },
+            sheetState = sheetState
+        ) {
+            // Sheet content
+            Button(onClick = {
+                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        showBottomSheet = false
+                    }
+                }
+            }) {
+                Text("Hide bottom sheet")
+            }
+        }
+    }
     if (showFiliereDialog) {
         FiliereDialog(
             filieres = filieres,
@@ -142,20 +183,36 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onFiliereClick: () -> Unit,
+    onFilterClick: () -> Unit,
     selectedFiliere: String?,
     onApprentissageClick: () -> Unit,
     selectedTypeEtab: String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Rechercher une formation...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            DsfrTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Rechercher une formation...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+            )
+            DsfrIconButton(
+                onClick = onFilterClick
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.filter_list_24px),
+                    contentDescription = stringResource (R.string.filter_btn),
+                    tint = DSFRTheme.colors.textDefault
+                )
+            }
+        }
+
 
         Spacer(modifier = Modifier.height(8.dp))
         if (query.isEmpty()) {
@@ -163,14 +220,15 @@ fun SearchBar(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
+                DsfrFilterChip(
                     selected = selectedFiliere != null,
                     onClick = onFiliereClick,
                     label = {
                         Text(selectedFiliere ?: "Toutes les filières")
                     }
                 )
-                FilterChip(
+                DsfrFilterChip(
+
                     selected = selectedTypeEtab != null,
                     onClick = onApprentissageClick,
                     label = {
@@ -189,7 +247,7 @@ fun FormationCard(
     onFavoriteClick: () -> Unit,
     isFavorite: Boolean
 ) {
-    Card(
+    DsfrCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -202,22 +260,22 @@ fun FormationCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                DsfrText(
                     text = formation.etablissement
                         ?: stringResource(R.string.establishment_unknown),
-                    style = MaterialTheme.typography.titleMedium
+                    textStyle = DsfrTextStyle.HeadingMd
                 )
-                Text(
+                DsfrText(
                     text = formation.formationDetailleeString
                         ?: formation.formationLibString
                         ?: stringResource(R.string.formation),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    textStyle = DsfrTextStyle.BodySm,
+                    color = DsfrTextColor.Mention
                 )
-                Text(
+                DsfrText(
                     text = "${formation.ville ?: ""} - ${formation.departement ?: ""}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    textStyle = DsfrTextStyle.BodyXs,
+                    color = DsfrTextColor.Label
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -225,12 +283,19 @@ fun FormationCard(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Chip("id: ${formation.id}")
                     formation.capacite?.let {
-                        Chip(stringResource(R.string.capacity) + ": $it")
+                        DsfrTag(
+                            stringResource(R.string.capacity) + ": $it",
+                            type = DsfrTagType.Primary,
+                            size = DsfrTagSize.Small
+                        )
                     }
                     formation.tauxAcces?.let {
-                        Chip(stringResource(R.string.access_format, it))
+                        DsfrTag(
+                            stringResource(R.string.access_format, it),
+                            type = DsfrTagType.Primary,
+                            size = DsfrTagSize.Small
+                        )
                     }
                 }
             }
@@ -243,25 +308,11 @@ fun FormationCard(
                         if (isFavorite) R.string.remove_from_favorites
                         else R.string.add_to_favorites
                     ),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurface
+                    tint = if (isFavorite) DSFRTheme.colors.error
+                    else DSFRTheme.colors.textDefault
                 )
             }
         }
-    }
-}
-
-@Composable
-fun Chip(text: String) {
-    Surface(
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.secondaryContainer
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall
-        )
     }
 }
 
@@ -272,44 +323,34 @@ fun FiliereDialog(
     onDismiss: () -> Unit,
     onFiliereSelected: (String?) -> Unit
 ) {
-    AlertDialog(
+    DsfrAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.select_filiere)) },
         text = {
             LazyColumn {
                 item {
-                    TextButton(
+                    DsfrTextButton(
                         onClick = {
                             if (selectedFiliere != null) {
                                 onFiliereSelected(null)
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.textButtonColors(
-                            containerColor = if (selectedFiliere == null)
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            else
-                                MaterialTheme.colorScheme.surface
-                        )
+                        selected = selectedFiliere == null
                     ) {
                         Text(stringResource(R.string.all_filieres))
                     }
                 }
 
                 items(filieres) { filiere ->
-                    TextButton(
+                    DsfrTextButton(
                         onClick = {
                             if (filiere != selectedFiliere) {
                                 onFiliereSelected(filiere)
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.textButtonColors(
-                            containerColor = if (selectedFiliere == filiere)
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            else
-                                MaterialTheme.colorScheme.surface
-                        )
+                        selected = filiere == selectedFiliere
                     ) {
                         Text(filiere)
                     }
@@ -332,44 +373,32 @@ fun ContratEtabDialog(
     onContratEtabSelected: (String?) -> Unit
 ) {
 
-    AlertDialog(
+    DsfrAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Type de formation") },
         text = {
             Column {
-                TextButton(
+                DsfrTextButton(
                     onClick = {
                         if (selectedTypeEtab != null) {
                             onContratEtabSelected(null)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor = if (selectedTypeEtab == null)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        else
-                            MaterialTheme.colorScheme.surface
-                    )
-
-
+                    selected = selectedTypeEtab == null
                 ) {
                     Text("Toutes formations")
                 }
 
                 options.forEach { option ->
-                    TextButton(
+                    DsfrTextButton(
                         onClick = {
                             if (option != selectedTypeEtab) {
                                 onContratEtabSelected(option)
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.textButtonColors(
-                            containerColor = if (selectedTypeEtab == option)
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            else
-                                MaterialTheme.colorScheme.surface
-                        )
+                        selected = selectedTypeEtab == option
                     ) {
                         Text(option)
                     }
@@ -377,8 +406,8 @@ fun ContratEtabDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
+            DsfrTextButton(onClick = onDismiss) {
+                DsfrText(stringResource(R.string.close))
             }
         }
     )

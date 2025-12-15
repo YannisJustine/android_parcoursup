@@ -65,4 +65,5 @@
     <string name="formation">Formation</string>
     <string name="not_available">N/A</string>
     <string name="bac_autre">Autres</string>
+    <string name="filter_btn">Filtrer</string>
 </resources>

@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.DpSize
 import org.maplibre.compose.expressions.dsl.format
 import org.maplibre.compose.expressions.dsl.span
 import androidx.compose.ui.unit.em
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
 import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.FeatureCollection
 import org.maplibre.spatialk.geojson.Point
@@ -59,7 +60,7 @@ fun MapScreen(
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
+            ) { DsfrCircularProgressIndicator() }
         }
 
         is MapUiState.Success -> {

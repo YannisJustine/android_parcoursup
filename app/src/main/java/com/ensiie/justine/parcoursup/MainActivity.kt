@@ -1,5 +1,6 @@
 package com.ensiie.justine.parcoursup
 
+import DsfrScaffold
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -15,6 +16,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
@@ -31,6 +33,10 @@ import com.ensiie.justine.parcoursup.ui.favorites.FavoritesScreen
 import com.ensiie.justine.parcoursup.ui.formations.FormationsScreen
 import com.ensiie.justine.parcoursup.ui.map.MapScreen
 import com.ensiie.justine.parcoursup.ui.theme.ParcoursupTheme
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextField
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -39,7 +45,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ParcoursupTheme {
+            DSFRTheme {
                 ParcoursupApp()
             }
         }
@@ -58,15 +64,24 @@ fun ParcoursupApp() {
     }
 
 
-    Scaffold(
+    DsfrScaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = DSFRTheme.colors.backgroundRaised,
+                ){
                     TopLevelDestination.entries.forEach { destination ->
                         val selected = currentDestination?.hasRoute(destination.route::class) == true
 
                         NavigationBarItem(
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = DSFRTheme.colors.actionHigh,
+                                unselectedIconColor = DSFRTheme.colors.textDefault,
+                                selectedTextColor = DSFRTheme.colors.actionHigh,
+                                unselectedTextColor = DSFRTheme.colors.textDefault,
+                                indicatorColor = DSFRTheme.colors.backgroundActionLow
+                            ),
                             selected = selected,
                             onClick = {
                                 navController.navigate(destination.route) {
@@ -83,13 +98,16 @@ fun ParcoursupApp() {
                                     contentDescription = destination.label
                                 )
                             },
-                            label = { Text(stringResource(
-                                when(destination) {
-                                    TopLevelDestination.FORMATIONS -> R.string.nav_formations
-                                    TopLevelDestination.FAVORITES -> R.string.nav_favorites
-                                    TopLevelDestination.MAP -> R.string.nav_map
-                                }
-                            )) }
+                            label = {
+                                DsfrText(text = stringResource(
+                                    when(destination) {
+                                        TopLevelDestination.FORMATIONS -> R.string.nav_formations
+                                        TopLevelDestination.FAVORITES -> R.string.nav_favorites
+                                        TopLevelDestination.MAP -> R.string.nav_map
+                                    }),
+                                    textStyle = DsfrTextStyle.BodySm
+                                )
+                            }
                         )
                     }
                 }

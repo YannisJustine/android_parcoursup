@@ -4,6 +4,11 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -14,14 +19,51 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.em
+import org.maplibre.compose.expressions.dsl.image
 import com.ensiie.justine.parcoursup.R
+
+
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.compose.style.rememberStyleState
+import org.maplibre.compose.util.ClickResult
+import org.maplibre.spatialk.geojson.Position
 import com.ensiie.justine.parcoursup.data.model.Formation
-import com.ensiie.justine.parcoursup.osmdroid.compose.MapView
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.Marker
+import org.maplibre.compose.sources.rememberGeoJsonSource
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.GeoJsonOptions
+import org.maplibre.compose.layers.CircleLayer
+import org.maplibre.compose.layers.SymbolLayer
+import org.maplibre.compose.expressions.dsl.feature
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.step
+import org.maplibre.compose.expressions.dsl.asNumber
+import org.maplibre.compose.expressions.dsl.asString
+import org.maplibre.compose.expressions.dsl.not
+import org.maplibre.compose.expressions.dsl.offset
+import org.maplibre.spatialk.geojson.Feature
+import org.maplibre.spatialk.geojson.FeatureCollection
+import org.maplibre.spatialk.geojson.Point
+import org.maplibre.spatialk.geojson.toJson
+import kotlinx.serialization.json.JsonPrimitive
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.Feature.get
+import org.maplibre.compose.map.MaplibreMap
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +74,7 @@ fun FormationDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -46,10 +88,10 @@ fun FormationDetailScreen(
                     if (uiState is DetailUiState.Success) {
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
                             Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite 
+                                imageVector = if (isFavorite) Icons.Filled.Favorite
                                              else Icons.Filled.FavoriteBorder,
                                 contentDescription = stringResource(
-                                    if (isFavorite) R.string.remove_from_favorites 
+                                    if (isFavorite) R.string.remove_from_favorites
                                     else R.string.add_to_favorites
                                 ),
                                 tint = if (isFavorite) MaterialTheme.colorScheme.error
@@ -72,7 +114,7 @@ fun FormationDetailScreen(
                     CircularProgressIndicator()
                 }
             }
-            
+
             is DetailUiState.Success -> {
                 FormationDetailContent(
                     formation = state.formation,
@@ -80,7 +122,7 @@ fun FormationDetailScreen(
                     modifier = Modifier.padding(padding)
                 )
             }
-            
+
             is DetailUiState.Error -> {
                 Box(
                     modifier = Modifier
@@ -160,12 +202,12 @@ fun FormationDetailContent(
                 }
             }
         }
-        
+
         Text(
             text = stringResource(R.string.stats_2024),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -181,7 +223,7 @@ fun FormationDetailContent(
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -193,18 +235,18 @@ fun FormationDetailContent(
             )
             StatCard(
                 title = stringResource(R.string.access_rate),
-                value = formation.tauxAcces?.let { 
-                    String.format("%.1f%%", it) 
+                value = formation.tauxAcces?.let {
+                    String.format("%.1f%%", it)
                 } ?: stringResource(R.string.not_available),
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         Text(
             text = stringResource(R.string.gender_distribution),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -218,16 +260,16 @@ fun FormationDetailContent(
                 ProgressRow(
                     label = stringResource(R.string.men),
                     percentage = 100 - (formation.pctFemmes ?: 0.0),
-                    count = formation.admis ?: 0
+                    count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
                 )
             }
         }
-        
+
         Text(
             text = stringResource(R.string.bac_distribution),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -248,14 +290,19 @@ fun FormationDetailContent(
                     percentage = formation.pctBacPro ?: 0.0,
                     count = formation.accBacPro ?: 0
                 )
+                ProgressRow(
+                    label = stringResource(R.string.bac_autre),
+                    percentage = 100 - (formation.pctBacPro ?: 0.0) - (formation.pctBacTech ?: 0.0) - (formation.pctBacGeneral ?: 0.0),
+                    count = 100 - (formation.accBacPro ?: 0) - (formation.accBacGeneral ?: 0) - (formation.accBacTech ?: 0)
+                )
             }
         }
-        
+
         Text(
             text = stringResource(R.string.bac_mentions),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -268,14 +315,14 @@ fun FormationDetailContent(
                 MentionRow(stringResource(R.string.mention_tbf), formation.mentionTBF?.toInt() ?: 0)
             }
         }
-        
+
         val coords = baseFormation.coordonnees
         if (coords != null && coords.size >= 2) {
             Text(
                 text = stringResource(R.string.location),
                 style = MaterialTheme.typography.titleMedium
             )
-            
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -360,27 +407,57 @@ fun FormationMap(
     longitude: Double,
     etablissement: String
 ) {
-    MapView(
-        modifier = Modifier.fillMaxSize(),
-        onInitMapView = { mapView ->
-            Configuration.getInstance().userAgentValue = "ParcoursupApp"
-            
-            mapView.setTileSource(TileSourceFactory.MAPNIK)
-            mapView.setMultiTouchControls(true)
-            mapView.controller.setZoom(15.0)
-            mapView.controller.setCenter(GeoPoint(latitude, longitude))
-        },
-        onUpdateMapView = { mapView ->
-            mapView.overlays.clear()
-            
-            val marker = Marker(mapView).apply {
-                position = GeoPoint(latitude, longitude)
-                title = etablissement
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            }
-            
-            mapView.overlays.add(marker)
-            mapView.invalidate()
-        }
+    val cameraState = rememberCameraState(
+        CameraPosition(target = Position(longitude, latitude), zoom = 15.0)
     )
+    val marker = painterResource(R.drawable.marker)
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures { /* Consume taps */ }
+            }
+    ) {
+        MaplibreMap(
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+            modifier = Modifier.fillMaxSize(),
+        cameraState = cameraState ,
+        styleState = rememberStyleState(),
+        onMapClick = { point, screenPoint ->
+            ClickResult.Pass
+        },
+        options =
+            MapOptions(
+                ornamentOptions = OrnamentOptions.AllDisabled,
+                gestureOptions =
+                    GestureOptions(
+                        isTiltEnabled = true,
+                        isZoomEnabled = true,
+                        isRotateEnabled = true,
+                        isScrollEnabled = true,
+                    ),
+            ),
+    ) {
+
+        val feat = Feature(geometry = Point(longitude=longitude, latitude=latitude), properties = mapOf("title" to JsonPrimitive(etablissement)))
+        val fc = FeatureCollection(listOf(feat))
+        val source = rememberGeoJsonSource(
+            GeoJsonData.JsonString(fc.toJson()),
+            GeoJsonOptions()
+        )
+
+            // Marker icon
+            org.maplibre.compose.layers.SymbolLayer(
+                id = "marker-icon",
+                source = source,
+                iconImage = image(marker),
+                iconAllowOverlap = const(true),
+                textField = feature["title"].asString(),
+                textFont = const(listOf("Noto Sans Regular")),
+                textColor = const(androidx.compose.ui.graphics.Color.Black),
+                textOffset =  offset(0.em, 0.6.em),
+            )
+        }
+    }
 }

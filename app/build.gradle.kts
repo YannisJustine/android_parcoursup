@@ -58,6 +58,7 @@ dependencies {
     
     // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.ui)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
     
@@ -88,7 +89,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Open Street Map
-    implementation(libs.osmdroid.android)
+    implementation(libs.maplibre.compose)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

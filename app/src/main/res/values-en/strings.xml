@@ -64,4 +64,5 @@
     <string name="establishment_unknown">Unknown establishment</string>
     <string name="formation">Course</string>
     <string name="not_available">N/A</string>
+    <string name="bac_autre">Others</string>
 </resources>

@@ -4,7 +4,9 @@ import com.ensiie.justine.parcoursup.data.model.ApiMapResponse
 import com.ensiie.justine.parcoursup.data.model.ApiResponse
 import com.ensiie.justine.parcoursup.data.model.ContratEtabResponse
 import com.ensiie.justine.parcoursup.data.model.FiliereGroupResponse
+import com.ensiie.justine.parcoursup.data.model.FormationMap
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ParcoursupApiService {
@@ -16,8 +18,8 @@ interface ParcoursupApiService {
         @Query("offset") offset: Int = 0
     ): ApiResponse
 
-    @GET("fr-esr-parcoursup/records?select=cod_aff_form,g_olocalisation_des_formations,ville_etab,g_ea_lib_vx&where=session=2024")
-    suspend fun getFormationsMap(): ApiMapResponse
+    @GET("fr-esr-parcoursup/exports/json?select=cod_aff_form,g_olocalisation_des_formations,ville_etab,g_ea_lib_vx&where=session=2024 and g_olocalisation_des_formations IS NOT NULL")
+    suspend fun getFormationsMap(): List<FormationMap>
     
     @GET("fr-esr-parcoursup/records")
     suspend fun searchFormations(

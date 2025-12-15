@@ -43,7 +43,7 @@ class FormationRepository @Inject constructor(
     
     suspend fun getAllFormationsForMap(): Result<List<FormationMap>> = try {
         val response = apiService.getFormationsMap()
-        Result.success(response.results)
+        Result.success(response)
     } catch (e: Exception) {
         Result.failure(e)
     }

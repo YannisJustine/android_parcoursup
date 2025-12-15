@@ -1,6 +1,7 @@
 package com.ensiie.justine.parcoursup
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -48,19 +49,18 @@ fun ParcoursupApp() {
     val currentDestination = navBackStackEntry?.destination
     
     // Check if we're on a detail screen (hide bottom bar)
-    val showBottomBar = currentDestination?.hierarchy?.any {
-        it.hasRoute(Route.FormationDetail::class)
-    } != true
-    
+    val showBottomBar = TopLevelDestination.entries.any {
+        currentDestination?.hasRoute(it.route::class) == true
+    }
+
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
                     TopLevelDestination.entries.forEach { destination ->
-                        val selected = currentDestination?.hierarchy?.any {
-                            it.hasRoute(destination.route::class)
-                        } == true
+                        val selected = currentDestination?.hasRoute(destination.route::class) == true
 
                         NavigationBarItem(
                             selected = selected,

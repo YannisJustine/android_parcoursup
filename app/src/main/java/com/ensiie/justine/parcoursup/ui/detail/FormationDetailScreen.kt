@@ -1,27 +1,78 @@
 package com.ensiie.justine.parcoursup.ui.detail
 
+
 import android.annotation.SuppressLint
-import androidx.compose.foundation.layout.*
+import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.Formation
-import com.ensiie.justine.parcoursup.osmdroid.compose.MapView
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.Marker
+import kotlinx.serialization.json.JsonPrimitive
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.asString
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.feature
+import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.dsl.offset
+import org.maplibre.compose.layers.SymbolLayer
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.GeoJsonOptions
+import org.maplibre.compose.sources.rememberGeoJsonSource
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.compose.style.rememberStyleState
+import org.maplibre.compose.util.ClickResult
+import org.maplibre.spatialk.geojson.Feature
+import org.maplibre.spatialk.geojson.FeatureCollection
+import org.maplibre.spatialk.geojson.Point
+import org.maplibre.spatialk.geojson.Position
+import org.maplibre.spatialk.geojson.toJson
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,28 +83,31 @@ fun FormationDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.details)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 actions = {
                     if (uiState is DetailUiState.Success) {
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
                             Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite 
-                                             else Icons.Filled.FavoriteBorder,
+                                imageVector = if (isFavorite) Icons.Filled.Favorite
+                                else Icons.Filled.FavoriteBorder,
                                 contentDescription = stringResource(
-                                    if (isFavorite) R.string.remove_from_favorites 
+                                    if (isFavorite) R.string.remove_from_favorites
                                     else R.string.add_to_favorites
                                 ),
                                 tint = if (isFavorite) MaterialTheme.colorScheme.error
-                                       else MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -72,7 +126,7 @@ fun FormationDetailScreen(
                     CircularProgressIndicator()
                 }
             }
-            
+
             is DetailUiState.Success -> {
                 FormationDetailContent(
                     formation = state.formation,
@@ -80,7 +134,7 @@ fun FormationDetailScreen(
                     modifier = Modifier.padding(padding)
                 )
             }
-            
+
             is DetailUiState.Error -> {
                 Box(
                     modifier = Modifier
@@ -113,12 +167,15 @@ fun FormationDetailContent(
     baseFormation: Formation,
     modifier: Modifier = Modifier
 ) {
+    var isScrollEnabled by remember { mutableStateOf(true) }
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(
+                    enabled = isScrollEnabled,
+                state = rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -160,12 +217,12 @@ fun FormationDetailContent(
                 }
             }
         }
-        
+
         Text(
             text = stringResource(R.string.stats_2024),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -181,7 +238,7 @@ fun FormationDetailContent(
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -193,18 +250,18 @@ fun FormationDetailContent(
             )
             StatCard(
                 title = stringResource(R.string.access_rate),
-                value = formation.tauxAcces?.let { 
-                    String.format("%.1f%%", it) 
+                value = formation.tauxAcces?.let {
+                    String.format("%.1f%%", it)
                 } ?: stringResource(R.string.not_available),
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         Text(
             text = stringResource(R.string.gender_distribution),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -218,16 +275,16 @@ fun FormationDetailContent(
                 ProgressRow(
                     label = stringResource(R.string.men),
                     percentage = 100 - (formation.pctFemmes ?: 0.0),
-                    count = formation.admis ?: 0
+                    count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
                 )
             }
         }
-        
+
         Text(
             text = stringResource(R.string.bac_distribution),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -248,14 +305,21 @@ fun FormationDetailContent(
                     percentage = formation.pctBacPro ?: 0.0,
                     count = formation.accBacPro ?: 0
                 )
+                ProgressRow(
+                    label = stringResource(R.string.bac_autre),
+                    percentage = 100 - (formation.pctBacPro ?: 0.0) - (formation.pctBacTech
+                        ?: 0.0) - (formation.pctBacGeneral ?: 0.0),
+                    count = 100 - (formation.accBacPro ?: 0) - (formation.accBacGeneral
+                        ?: 0) - (formation.accBacTech ?: 0)
+                )
             }
         }
-        
+
         Text(
             text = stringResource(R.string.bac_mentions),
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -268,14 +332,14 @@ fun FormationDetailContent(
                 MentionRow(stringResource(R.string.mention_tbf), formation.mentionTBF?.toInt() ?: 0)
             }
         }
-        
+
         val coords = baseFormation.coordonnees
         if (coords != null && coords.size >= 2) {
             Text(
                 text = stringResource(R.string.location),
                 style = MaterialTheme.typography.titleMedium
             )
-            
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -284,7 +348,10 @@ fun FormationDetailContent(
                 FormationMap(
                     latitude = coords[0],
                     longitude = coords[1],
-                    etablissement = baseFormation.etablissement ?: ""
+                    etablissement = baseFormation.etablissement ?: "",
+                    onMapInteraction = { isInteracting ->
+                        isScrollEnabled = !isInteracting
+                    }
                 )
             }
         }
@@ -358,29 +425,81 @@ fun MentionRow(label: String, count: Int) {
 fun FormationMap(
     latitude: Double,
     longitude: Double,
-    etablissement: String
+    etablissement: String,
+    onMapInteraction: (Boolean) -> Unit = {}
 ) {
-    MapView(
-        modifier = Modifier.fillMaxSize(),
-        onInitMapView = { mapView ->
-            Configuration.getInstance().userAgentValue = "ParcoursupApp"
-            
-            mapView.setTileSource(TileSourceFactory.MAPNIK)
-            mapView.setMultiTouchControls(true)
-            mapView.controller.setZoom(15.0)
-            mapView.controller.setCenter(GeoPoint(latitude, longitude))
-        },
-        onUpdateMapView = { mapView ->
-            mapView.overlays.clear()
-            
-            val marker = Marker(mapView).apply {
-                position = GeoPoint(latitude, longitude)
-                title = etablissement
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            }
-            
-            mapView.overlays.add(marker)
-            mapView.invalidate()
-        }
+    val cameraState = rememberCameraState(
+        CameraPosition(target = Position(longitude, latitude), zoom = 15.0)
     )
+    val marker = painterResource(R.drawable.marker)
+    var isInteracting by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isInteracting) {
+        onMapInteraction(isInteracting)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+
+    ) {
+        MaplibreMap(
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+            modifier = Modifier.fillMaxSize()
+                .pointerInput(Unit) {
+                    // https://github.com/maplibre/maplibre-compose/issues/726#issuecomment-3620016105
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            isInteracting = when (event.type) {
+                                PointerEventType.Press,
+                                PointerEventType.Move,
+                                PointerEventType.Scroll -> true
+
+                                else -> false
+                            }
+                        }
+                    }
+                },
+            cameraState = cameraState,
+            styleState = rememberStyleState(),
+            onMapClick = { point, screenPoint ->
+                ClickResult.Pass
+            },
+            options =
+                MapOptions(
+                    ornamentOptions = OrnamentOptions.AllDisabled,
+                    gestureOptions =
+                        GestureOptions(
+                            isTiltEnabled = true,
+                            isZoomEnabled = true,
+                            isRotateEnabled = true,
+                            isScrollEnabled = true,
+                        ),
+                ),
+        ) {
+
+            val feat = Feature(
+                geometry = Point(longitude = longitude, latitude = latitude),
+                properties = mapOf("title" to JsonPrimitive(etablissement))
+            )
+            val fc = FeatureCollection(listOf(feat))
+            val source = rememberGeoJsonSource(
+                GeoJsonData.JsonString(fc.toJson()),
+                GeoJsonOptions()
+            )
+
+            // Marker icon
+            SymbolLayer(
+                id = "marker-icon",
+                source = source,
+                iconImage = image(marker),
+                iconAllowOverlap = const(true),
+                textField = feature["title"].asString(),
+                textFont = const(listOf("Noto Sans Regular")),
+                textColor = const(androidx.compose.ui.graphics.Color.Black),
+                textOffset = offset(0.em, 0.6.em),
+            )
+        }
+    }
 }

@@ -33,7 +33,7 @@ fun DsfrFilterChip(
         modifier = modifier,
         enabled = enabled,
         leadingIcon = leadingIcon,
-        shape = RoundedCornerShape(6),
+        shape = RoundedCornerShape(50),
         colors = FilterChipDefaults.filterChipColors(
             containerColor = colors.backgroundAlt,
             labelColor = colors.textDefault,

@@ -21,11 +21,11 @@ class FormationsViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     
-    private val _selectedFiliere = MutableStateFlow<String?>(null)
-    val selectedFiliere: StateFlow<String?> = _selectedFiliere.asStateFlow()
+    private val _selectedFilieres = MutableStateFlow<Set<String>>(emptySet())
+    val selectedFilieres: StateFlow<Set<String>> = _selectedFilieres.asStateFlow()
     
-    private val _selectedTypeEtab = MutableStateFlow<String?>(null)
-    val selectedTypeEtab: StateFlow<String?> = _selectedTypeEtab.asStateFlow()
+    private val _selectedTypesEtab = MutableStateFlow<Set<String>>(emptySet())
+    val selectedTypesEtab: StateFlow<Set<String>> = _selectedTypesEtab.asStateFlow()
     
     private val _filieres = MutableStateFlow<List<String>>(emptyList())
     val filieres: StateFlow<List<String>> = _filieres.asStateFlow()
@@ -35,6 +35,9 @@ class FormationsViewModel @Inject constructor(
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+    
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
     
     private var currentOffset = 0
     private var canLoadMore = true
@@ -59,8 +62,8 @@ class FormationsViewModel @Inject constructor(
     }
     
     fun loadFormations(
-        filiere: String? = null,
-        contratEtab: String? = null,
+        filieres: Set<String> = emptySet(),
+        contratsEtab: Set<String> = emptySet(),
         append: Boolean = false
     ) {
         viewModelScope.launch {
@@ -77,8 +80,8 @@ class FormationsViewModel @Inject constructor(
             
             repository.searchFormations(
                 name = null,
-                filiere = filiere,
-                contratEtab = contratEtab,
+                filiere = filieres.firstOrNull(),
+                contratEtab = contratsEtab.firstOrNull(),
                 offset = currentOffset,
                 limit = 100
             )
@@ -124,7 +127,7 @@ class FormationsViewModel @Inject constructor(
         _searchQuery.value = query
         
         if (query.isBlank()) {
-            loadFormations(_selectedFiliere.value, contratEtab = _selectedTypeEtab.value)
+            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
             return
         }
         
@@ -142,8 +145,8 @@ class FormationsViewModel @Inject constructor(
             
             repository.searchFormations(
                 name = query,
-                filiere = _selectedFiliere.value,
-                contratEtab = _selectedTypeEtab.value,
+                filiere = _selectedFilieres.value.firstOrNull(),
+                contratEtab = _selectedTypesEtab.value.firstOrNull(),
                 offset = currentOffset,
                 limit = 50
             )
@@ -178,18 +181,36 @@ class FormationsViewModel @Inject constructor(
         if (isSearchMode && _searchQuery.value.isNotBlank()) {
             searchFormations(_searchQuery.value, append = true)
         } else {
-            loadFormations(_selectedFiliere.value, contratEtab = _selectedTypeEtab.value, append = true)
+            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value, append = true)
         }
     }
     
-    fun selectFiliere(filiere: String?) {
-        _selectedFiliere.value = filiere
-        loadFormations(filiere, contratEtab = _selectedTypeEtab.value)
+    fun toggleFiliere(filiere: String) {
+        _selectedFilieres.value = if (_selectedFilieres.value.contains(filiere)) {
+            _selectedFilieres.value - filiere
+        } else {
+            _selectedFilieres.value + filiere
+        }
+        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+    }
+    
+    fun clearFilieres() {
+        _selectedFilieres.value = emptySet()
+        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
     }
         
-    fun selectContratEtab(contratEtab: String?) {
-        _selectedTypeEtab.value = contratEtab
-        loadFormations(_selectedFiliere.value, contratEtab = contratEtab)
+    fun toggleContratEtab(contrat: String) {
+        _selectedTypesEtab.value = if (_selectedTypesEtab.value.contains(contrat)) {
+            _selectedTypesEtab.value - contrat
+        } else {
+            _selectedTypesEtab.value + contrat
+        }
+        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+    }
+    
+    fun clearContratsEtab() {
+        _selectedTypesEtab.value = emptySet()
+        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
     }
     
     fun toggleFavorite(formation: Formation) {
@@ -207,6 +228,22 @@ class FormationsViewModel @Inject constructor(
     
     fun isFavorite(id: String): Flow<Boolean> = 
         repository.isFavorite(id)
+    
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            currentOffset = 0
+            canLoadMore = true
+            
+            if (isSearchMode && _searchQuery.value.isNotBlank()) {
+                searchFormations(_searchQuery.value, append = false)
+            } else {
+                loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value, append = false)
+            }
+            
+            _isRefreshing.value = false
+        }
+    }
 }
 
 sealed interface FormationsUiState {

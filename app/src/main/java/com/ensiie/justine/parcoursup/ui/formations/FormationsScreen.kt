@@ -1,22 +1,32 @@
 package com.ensiie.justine.parcoursup.ui.formations
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ensiie.justine.parcoursup.R
@@ -47,27 +57,31 @@ fun FormationsScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filieres by viewModel.filieres.collectAsState()
     val contratsEtab by viewModel.contratsEtab.collectAsState()
-    val selectedFiliere by viewModel.selectedFiliere.collectAsState()
-    val selectedTypeEtab by viewModel.selectedTypeEtab.collectAsState()
-    val sheetState = rememberModalBottomSheetState()
+    val selectedFilieres by viewModel.selectedFilieres.collectAsState()
+    val selectedTypesEtab by viewModel.selectedTypesEtab.collectAsState()
+    val filterSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
-    var showFiliereDialog by remember { mutableStateOf(false) }
-    var showContratEtabDialog by remember { mutableStateOf(false) }
-    var showBottomSheet by remember { mutableStateOf(false) }
+    var filterType by remember { mutableStateOf<FilterType?>(null) }
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         SearchBar(
             query = searchQuery,
             onQueryChange = viewModel::searchFormations,
-            onFiliereClick = { showFiliereDialog = true },
-            onFilterClick = { showBottomSheet = true },
-            selectedFiliere = selectedFiliere,
-            onApprentissageClick = { showContratEtabDialog = true },
-            selectedTypeEtab = selectedTypeEtab,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        FilterTagsRow(
+            selectedFilieresCount = selectedFilieres.size,
+            selectedContratsCount = selectedTypesEtab.size,
+            onFiliereClick = { filterType = FilterType.FILIERE },
+            onContratClick = { filterType = FilterType.CONTRAT },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
         when (val state = uiState) {
@@ -82,38 +96,55 @@ fun FormationsScreen(
 
             is FormationsUiState.Success -> {
                 val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+                val isRefreshing by viewModel.isRefreshing.collectAsState()
+                val pullToRefreshState = rememberPullToRefreshState()
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-
-                    items(state.formations, key = { it.id }) { formation ->
-                        FormationCard(
-                            formation = formation,
-                            onClick = { onNavigateToDetail(formation.id) },
-                            onFavoriteClick = { viewModel.toggleFavorite(formation) },
-                            isFavorite = viewModel.isFavorite(formation.id)
-                                .collectAsState(initial = false).value
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    state = pullToRefreshState,
+                    indicator = {
+                        Indicator(
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            isRefreshing = isRefreshing,
+                            containerColor = DSFRTheme.colors.backgroundDefault,
+                            color = DSFRTheme.colors.actionHigh,
+                            state = pullToRefreshState
                         )
-                    }
+                    },
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
 
-                    if (isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                DsfrCircularProgressIndicator()
-                            }
+                        items(state.formations, key = { it.id }) { formation ->
+                            FormationCard(
+                                formation = formation,
+                                onClick = { onNavigateToDetail(formation.id) },
+                                onFavoriteClick = { viewModel.toggleFavorite(formation) },
+                                isFavorite = viewModel.isFavorite(formation.id)
+                                    .collectAsState(initial = false).value
+                            )
                         }
-                    } else if (state.formations.isNotEmpty()) {
-                        item {
-                            LaunchedEffect(Unit) {
-                                viewModel.loadMoreFormations()
+
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    DsfrCircularProgressIndicator()
+                                }
+                            }
+                        } else if (state.formations.isNotEmpty()) {
+                            item {
+                                LaunchedEffect(Unit) {
+                                    viewModel.loadMoreFormations()
+                                }
                             }
                         }
                     }
@@ -133,45 +164,35 @@ fun FormationsScreen(
             }
         }
     }
-    if (showBottomSheet) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                showBottomSheet = false
-            },
-            sheetState = sheetState
-        ) {
-            // Sheet content
-            Button(onClick = {
-                scope.launch { sheetState.hide() }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        showBottomSheet = false
-                    }
-                }
-            }) {
-                Text("Hide bottom sheet")
-            }
-        }
-    }
-    if (showFiliereDialog) {
-        FiliereDialog(
-            filieres = filieres,
-            selectedFiliere = selectedFiliere,
-            onDismiss = { showFiliereDialog = false },
-            onFiliereSelected = { filiere ->
-                viewModel.selectFiliere(filiere)
-                showFiliereDialog = false
-            }
-        )
-    }
 
-    if (showContratEtabDialog) {
-        ContratEtabDialog(
-            options = contratsEtab,
-            selectedTypeEtab = selectedTypeEtab,
-            onDismiss = { showContratEtabDialog = false },
-            onContratEtabSelected = { contratEtab ->
-                viewModel.selectContratEtab(contratEtab)
-                showContratEtabDialog = false
+    filterType?.let { type ->
+        FilterModalBottomSheet(
+            title = when (type) {
+                FilterType.FILIERE -> stringResource(R.string.select_filiere)
+                FilterType.CONTRAT -> stringResource(R.string.select_formation)
+            },
+
+            options = when (type) {
+                FilterType.FILIERE -> filieres
+                FilterType.CONTRAT -> contratsEtab
+            },
+            selectedOptions = when (type) {
+                FilterType.FILIERE -> selectedFilieres
+                FilterType.CONTRAT -> selectedTypesEtab
+            },
+            onDismissRequest = { filterType = null },
+            sheetState = filterSheetState,
+            onToggleOption = { option ->
+                when (type) {
+                    FilterType.FILIERE -> viewModel.toggleFiliere(option)
+                    FilterType.CONTRAT -> viewModel.toggleContratEtab(option)
+                }
+            },
+            onClearAll = {
+                when (type) {
+                    FilterType.FILIERE -> viewModel.clearFilieres()
+                    FilterType.CONTRAT -> viewModel.clearContratsEtab()
+                }
             }
         )
     }
@@ -182,62 +203,17 @@ fun FormationsScreen(
 fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    onFiliereClick: () -> Unit,
-    onFilterClick: () -> Unit,
-    selectedFiliere: String?,
-    onApprentissageClick: () -> Unit,
-    selectedTypeEtab: String?,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            DsfrTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Rechercher une formation...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-            )
-            DsfrIconButton(
-                onClick = onFilterClick
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.filter_list_24px),
-                    contentDescription = stringResource (R.string.filter_btn),
-                    tint = DSFRTheme.colors.textDefault
-                )
-            }
-        }
-
-
-        Spacer(modifier = Modifier.height(8.dp))
-        if (query.isEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DsfrFilterChip(
-                    selected = selectedFiliere != null,
-                    onClick = onFiliereClick,
-                    label = {
-                        Text(selectedFiliere ?: "Toutes les filières")
-                    }
-                )
-                DsfrFilterChip(
-
-                    selected = selectedTypeEtab != null,
-                    onClick = onApprentissageClick,
-                    label = {
-                        Text(selectedTypeEtab ?: "Toutes formations")
-                    }
-                )
-            }
-        }
-    }
+    DsfrTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Rechercher une formation...") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        singleLine = true,
+        maxLines = 1,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -316,99 +292,149 @@ fun FormationCard(
     }
 }
 
-@Composable
-fun FiliereDialog(
-    filieres: List<String>,
-    selectedFiliere: String?,
-    onDismiss: () -> Unit,
-    onFiliereSelected: (String?) -> Unit
-) {
-    DsfrAlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.select_filiere)) },
-        text = {
-            LazyColumn {
-                item {
-                    DsfrTextButton(
-                        onClick = {
-                            if (selectedFiliere != null) {
-                                onFiliereSelected(null)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        selected = selectedFiliere == null
-                    ) {
-                        Text(stringResource(R.string.all_filieres))
-                    }
-                }
 
-                items(filieres) { filiere ->
-                    DsfrTextButton(
-                        onClick = {
-                            if (filiere != selectedFiliere) {
-                                onFiliereSelected(filiere)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        selected = filiere == selectedFiliere
-                    ) {
-                        Text(filiere)
-                    }
+@Composable
+fun FilterTagsRow(
+    selectedFilieresCount: Int,
+    selectedContratsCount: Int,
+    onFiliereClick: () -> Unit,
+    onContratClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        DsfrText(
+            text = "Filtrer par :",
+            textStyle = DsfrTextStyle.BodyMd,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.CenterVertically)
+        )
+        
+        DsfrFilterChip(
+            selected = selectedFilieresCount > 0,
+            onClick = onFiliereClick,
+            label = {
+            if (selectedFilieresCount == 0) {
+                Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                DsfrText("Filtrer par filière", textStyle = DsfrTextStyle.BodySm)
+                Icon(
+                    painter = painterResource(id = R.drawable.add_circle_24dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
                 }
+            } else {
+                DsfrText("Filtrer par filière ($selectedFilieresCount)")
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
             }
-        }
-    )
+        )
+
+        DsfrFilterChip(
+            selected = selectedContratsCount > 0,
+            onClick = onContratClick,
+            label = {
+            if (selectedContratsCount == 0) {
+                Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                DsfrText("Filtrer par type", textStyle = DsfrTextStyle.BodySm)
+                Icon(
+                    painter = painterResource(id = R.drawable.add_circle_24dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                }
+            } else {
+                DsfrText("Filtrer par type ($selectedContratsCount)")
+            }
+            }
+        )
+    }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContratEtabDialog(
+fun FilterModalBottomSheet(
+    title: String,
     options: List<String>,
-    selectedTypeEtab: String?,
-    onDismiss: () -> Unit,
-    onContratEtabSelected: (String?) -> Unit
+    selectedOptions: Set<String>,
+    onDismissRequest: () -> Unit,
+    sheetState: SheetState,
+    onToggleOption: (String) -> Unit,
+    onClearAll: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val minHeight = configuration.screenHeightDp * 0.5f
+    val maxHeight = configuration.screenHeightDp * 0.9f
 
-    DsfrAlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Type de formation") },
-        text = {
-            Column {
-                DsfrTextButton(
-                    onClick = {
-                        if (selectedTypeEtab != null) {
-                            onContratEtabSelected(null)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    selected = selectedTypeEtab == null
-                ) {
-                    Text("Toutes formations")
-                }
-
-                options.forEach { option ->
-                    DsfrTextButton(
-                        onClick = {
-                            if (option != selectedTypeEtab) {
-                                onContratEtabSelected(option)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        selected = selectedTypeEtab == option
-                    ) {
-                        Text(option)
+    ModalBottomSheet(
+        sheetState = sheetState,
+        onDismissRequest = onDismissRequest,
+        containerColor = DSFRTheme.colors.backgroundDefault
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = minHeight.dp, max = maxHeight.dp)
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DsfrText(
+                    text = title,
+                    textStyle = DsfrTextStyle.HeadingMd
+                )
+                
+                if (selectedOptions.isNotEmpty()) {
+                    DsfrTextButton(onClick = onClearAll) {
+                        Text("Tout effacer")
                     }
                 }
             }
-        },
-        confirmButton = {
-            DsfrTextButton(onClick = onDismiss) {
-                DsfrText(stringResource(R.string.close))
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+            ) {
+                items(options) { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onToggleOption(option) }
+                            .padding(vertical = DSFRTheme.spacing.xs),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedOptions.contains(option),
+                            onCheckedChange = { onToggleOption(option) },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = DSFRTheme.colors.actionHigh,
+                                uncheckedColor = DSFRTheme.colors.textDefault
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
+                        DsfrText(
+                            text = option
+                        )
+                    }
+                }
             }
         }
-    )
+    }
+}
+
+enum class FilterType {
+    FILIERE,
+    CONTRAT
 }

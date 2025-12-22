@@ -28,7 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun FormationsScreen(
     onNavigateToDetail: (String) -> Unit,
-    viewModel: FormationsViewModel = hiltViewModel()
+    viewModel: FormationsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -98,6 +98,25 @@ fun FormationsScreen(
                 val isLoadingMore by viewModel.isLoadingMore.collectAsState()
                 val isRefreshing by viewModel.isRefreshing.collectAsState()
                 val pullToRefreshState = rememberPullToRefreshState()
+                val listState = rememberLazyListState()
+
+                LaunchedEffect(Unit) {
+                    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+                        .map { visibleItems ->
+                            val lastVisibleItemIndex = visibleItems.lastOrNull()?.index ?: -1
+                            val totalItems = listState.layoutInfo.totalItemsCount
+                            Pair(lastVisibleItemIndex, totalItems)
+                        }
+                        .collect { (lastVisibleItemIndex, totalItems) ->
+                            if (state.formations.isEmpty() || isLoadingMore) {
+                                return@collect
+                            }
+
+                            if (lastVisibleItemIndex >= totalItems - 1) {
+                                viewModel.loadMoreFormations()
+                            }
+                        }
+                }
 
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
@@ -111,14 +130,14 @@ fun FormationsScreen(
                             color = DSFRTheme.colors.actionHigh,
                             state = pullToRefreshState
                         )
-                    },
+                    }
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        state = listState
                     ) {
-
                         items(state.formations, key = { it.id }) { formation ->
                             FormationCard(
                                 formation = formation,
@@ -138,12 +157,6 @@ fun FormationsScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     DsfrCircularProgressIndicator()
-                                }
-                            }
-                        } else if (state.formations.isNotEmpty()) {
-                            item {
-                                LaunchedEffect(Unit) {
-                                    viewModel.loadMoreFormations()
                                 }
                             }
                         }

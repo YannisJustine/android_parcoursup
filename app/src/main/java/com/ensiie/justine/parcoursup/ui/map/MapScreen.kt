@@ -1,57 +1,60 @@
 package com.ensiie.justine.parcoursup.ui.map
 
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import org.maplibre.compose.map.MaplibreMap
-import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.launch
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.FormationMap
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
+import org.koin.compose.viewmodel.koinViewModel
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.asNumber
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.feature
+import org.maplibre.compose.expressions.dsl.formatToString
+import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.dsl.not
+import org.maplibre.compose.expressions.dsl.step
+import org.maplibre.compose.expressions.value.SymbolAnchor
+import org.maplibre.compose.layers.CircleLayer
+import org.maplibre.compose.layers.SymbolLayer
 import org.maplibre.compose.map.GestureOptions
 import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.GeoJsonOptions
+import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.style.rememberStyleState
 import org.maplibre.compose.util.ClickResult
-import org.maplibre.spatialk.geojson.Position
-
-import org.maplibre.compose.sources.rememberGeoJsonSource
-import org.maplibre.compose.sources.GeoJsonData
-import org.maplibre.compose.sources.GeoJsonOptions
-import org.maplibre.compose.layers.CircleLayer
-import org.maplibre.compose.layers.SymbolLayer
-import org.maplibre.compose.expressions.dsl.feature
-import org.maplibre.compose.expressions.dsl.const
-import org.maplibre.compose.expressions.dsl.step
-import org.maplibre.compose.expressions.dsl.asNumber
-import org.maplibre.compose.expressions.dsl.asString
-import org.maplibre.compose.expressions.dsl.not
-import org.maplibre.compose.expressions.dsl.image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.DpSize
-import org.maplibre.compose.expressions.dsl.format
-import org.maplibre.compose.expressions.dsl.span
-import androidx.compose.ui.unit.em
-import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
 import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.FeatureCollection
 import org.maplibre.spatialk.geojson.Point
+import org.maplibre.spatialk.geojson.Position
 import org.maplibre.spatialk.geojson.toJson
-import kotlinx.serialization.json.JsonPrimitive
-import org.maplibre.compose.expressions.value.SymbolAnchor
 
 @Composable
 fun MapScreen(
     onNavigateToFormations: (String) -> Unit,
-    viewModel: MapViewModel = hiltViewModel()
+    viewModel: MapViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -60,7 +63,7 @@ fun MapScreen(
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
-            ) { DsfrCircularProgressIndicator() }
+            ) { CircularProgressIndicator() }
         }
 
         is MapUiState.Success -> {
@@ -94,7 +97,7 @@ fun MapLibre(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    // Calculate bounds to fit all formations
+    val markerIcon = painterResource(R.drawable.marker)
     val parisCoordinates = doubleArrayOf(48.856614, 2.3522219)
     val (centerLat, centerLon, initialZoom) = Triple(parisCoordinates[0], parisCoordinates[1], 10.0)
 
@@ -126,36 +129,38 @@ fun MapLibre(
         val features = formations.mapNotNull { f ->
             val lat = f.etabGps.lat
             val lon = f.etabGps.lon
-            if (lat.isFinite() && lon.isFinite()) {
                 Feature(
-                    geometry = Point(Position(latitude = lat, longitude = lon)),
-                    properties = mapOf("id" to JsonPrimitive(f.id))
-                )
-            } else null
+                    geometry = Point(Position(lon, lat)),
+                    properties = mapOf("id" to JsonPrimitive(f.id)))
         }
 
         val fcJson = FeatureCollection(features).toJson()
 
         val source = rememberGeoJsonSource(
             GeoJsonData.JsonString(fcJson),
-            GeoJsonOptions(cluster = true, clusterRadius = 50, clusterMaxZoom = 16, clusterMinPoints = 2)
+            GeoJsonOptions(
+                cluster = true, 
+                clusterRadius = 50, 
+                clusterMaxZoom = 14
+            )
         )
 
         CircleLayer(
             id = "clusters",
             source = source,
             filter = feature.has("point_count"),
-            color = const(androidx.compose.ui.graphics.Color(50, 205, 5)),
-            opacity = const(0.5f),
-            radius =
-            step(
+            color = step(
                 input = feature["point_count"].asNumber(),
-                fallback = const(15.dp),
-                25 to const(20.dp),
+                fallback = const(androidx.compose.ui.graphics.Color(0xFF51BBD6)),
+                100 to const(androidx.compose.ui.graphics.Color(0xFF1E3A8A)),
+                750 to const(androidx.compose.ui.graphics.Color(0xFFF28CB1))
+            ),
+
+            radius = step(
+                input = feature["point_count"].asNumber(),
+                fallback = const(20.dp),
                 100 to const(30.dp),
-                500 to const(40.dp),
-                1000 to const(50.dp),
-                5000 to const(60.dp),
+                750 to const(40.dp)
             ),
             onClick = { feats ->
                 feats
@@ -181,7 +186,10 @@ fun MapLibre(
             id = "cluster-count",
             source = source,
             filter = feature.has("point_count"),
-            textField = feature["point_count_abbreviated"].asString(),
+            textField = feature["point_count"].asNumber().formatToString(
+                minFractionDigits = 0,
+                maxFractionDigits = 0
+            ),
             textFont = const(listOf("Noto Sans Regular")),
             textColor = const(MaterialTheme.colorScheme.onBackground),
         )
@@ -190,10 +198,9 @@ fun MapLibre(
             id = "unclustered-marker",
             source = source,
             filter = !feature.has("point_count"),
-            iconImage = image(
-                value = painterResource(R.drawable.marker)
-            ),
+            iconImage = image(markerIcon),
             iconAllowOverlap = const(true),
+            iconIgnorePlacement = const(true),
             iconAnchor = const(SymbolAnchor.Bottom),
             onClick = { feats ->
                 feats.firstOrNull()?.let { f ->

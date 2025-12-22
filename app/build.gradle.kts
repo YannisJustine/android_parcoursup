@@ -3,12 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-}
-
-hilt {
-    enableAggregatingTask = false
 }
 
 android {
@@ -56,12 +51,16 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     
-    // Hilt
-    implementation(libs.hilt.android)
+    // Koin
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.ui)
-    ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
+    
+    // Koin Testing
+    testImplementation(libs.koin.test)
+    androidTestImplementation(libs.koin.android.test)
     
     // Retrofit & OkHttp
     implementation(libs.retrofit)
@@ -79,12 +78,11 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
+    // Navigation 3
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    
-    // Coil
-    implementation(libs.coil.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)

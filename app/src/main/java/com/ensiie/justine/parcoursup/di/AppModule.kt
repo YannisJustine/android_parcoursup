@@ -1,44 +1,43 @@
 package com.ensiie.justine.parcoursup.di
 
-import android.content.Context
 import androidx.room.Room
-import com.ensiie.justine.parcoursup.data.local.FavoriteFormationDao
 import com.ensiie.justine.parcoursup.data.local.ParcoursupDatabase
 import com.ensiie.justine.parcoursup.data.network.ParcoursupApiService
+import com.ensiie.justine.parcoursup.data.repository.FormationRepository
+import com.ensiie.justine.parcoursup.ui.detail.FormationDetailViewModel
+import com.ensiie.justine.parcoursup.ui.favorites.FavoritesViewModel
+import com.ensiie.justine.parcoursup.ui.formations.FormationsViewModel
+import com.ensiie.justine.parcoursup.ui.map.MapViewModel
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
-import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
-object AppModule {
+private const val BASE_URL = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/"
+
+val appModule = module {
     
-    private const val BASE_URL = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/"
+    // Moshi
+    single {
+        Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
+    }
     
-    @Provides
-    @Singleton
-    fun provideMoshi(): Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
-    
-    @Provides
-    @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    // OkHttpClient
+    single {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         
-        return OkHttpClient.Builder()
+        OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -46,34 +45,40 @@ object AppModule {
             .build()
     }
     
-    @Provides
-    @Singleton
-    fun provideRetrofit(
-        okHttpClient: OkHttpClient,
-        moshi: Moshi
-    ): Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .build()
+    // Retrofit
+    single {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(get())
+            .addConverterFactory(MoshiConverterFactory.create(get()))
+            .build()
+    }
     
-    @Provides
-    @Singleton
-    fun provideParcoursupApiService(retrofit: Retrofit): ParcoursupApiService =
-        retrofit.create(ParcoursupApiService::class.java)
+    // API Service
+    single {
+        get<Retrofit>().create(ParcoursupApiService::class.java)
+    }
     
-    @Provides
-    @Singleton
-    fun provideParcoursupDatabase(
-        @ApplicationContext context: Context
-    ): ParcoursupDatabase = Room.databaseBuilder(
-        context,
-        ParcoursupDatabase::class.java,
-        "parcoursup_database"
-    ).build()
+    // Room Database
+    single {
+        Room.databaseBuilder(
+            get(),
+            ParcoursupDatabase::class.java,
+            "parcoursup_database"
+        ).build()
+    }
     
-    @Provides
-    @Singleton
-    fun provideFavoriteFormationDao(database: ParcoursupDatabase): FavoriteFormationDao =
-        database.favoriteFormationDao()
+    // DAO
+    single { get<ParcoursupDatabase>().favoriteFormationDao() }
+    
+    // Repository
+    singleOf(::FormationRepository)
+    
+    // ViewModels
+    viewModelOf(::FormationsViewModel)
+    viewModelOf(::FavoritesViewModel)
+    viewModelOf(::MapViewModel)
+    viewModel { (recordId: String) -> 
+        FormationDetailViewModel(recordId, get())
+    }
 }

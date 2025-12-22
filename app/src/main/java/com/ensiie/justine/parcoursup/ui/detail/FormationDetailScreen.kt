@@ -1,8 +1,14 @@
 package com.ensiie.justine.parcoursup.ui.detail
 
-import DsfrScaffold
 import android.annotation.SuppressLint
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -15,10 +21,31 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -30,6 +57,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.em
 import org.maplibre.compose.expressions.dsl.image
+import androidx.compose.ui.unit.em
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import com.ensiie.justine.parcoursup.R
 
 
@@ -75,6 +105,30 @@ import org.maplibre.compose.expressions.dsl.Feature.get
 import org.maplibre.compose.map.MaplibreMap
 
 
+import kotlinx.serialization.json.JsonPrimitive
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.asString
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.feature
+import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.dsl.offset
+import org.maplibre.compose.layers.SymbolLayer
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.GeoJsonOptions
+import org.maplibre.compose.sources.rememberGeoJsonSource
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.compose.style.rememberStyleState
+import org.maplibre.compose.util.ClickResult
+import org.maplibre.spatialk.geojson.Feature
+import org.maplibre.spatialk.geojson.FeatureCollection
+import org.maplibre.spatialk.geojson.Point
+import org.maplibre.spatialk.geojson.Position
+import org.maplibre.spatialk.geojson.toJson
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +136,7 @@ import org.maplibre.compose.map.MaplibreMap
 fun FormationDetailScreen(
     id: String,
     onNavigateBack: () -> Unit,
-    viewModel: FormationDetailViewModel = hiltViewModel()
+    viewModel: FormationDetailViewModel = koinViewModel { parametersOf(id) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)
@@ -99,7 +153,10 @@ fun FormationDetailScreen(
                 title = { DsfrText(stringResource(R.string.details), textStyle = DsfrTextStyle.HeadingLg) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 actions = {
@@ -173,12 +230,15 @@ fun FormationDetailContent(
     baseFormation: Formation,
     modifier: Modifier = Modifier
 ) {
+    var isScrollEnabled by remember { mutableStateOf(true) }
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(
+                    enabled = isScrollEnabled,
+                state = rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         DsfrCard(
             modifier = Modifier.fillMaxWidth(),
@@ -340,7 +400,10 @@ fun FormationDetailContent(
                 FormationMap(
                     latitude = coords[0],
                     longitude = coords[1],
-                    etablissement = baseFormation.etablissement ?: ""
+                    etablissement = baseFormation.etablissement ?: "",
+                    onMapInteraction = { isInteracting ->
+                        isScrollEnabled = !isInteracting
+                    }
                 )
             }
         }
@@ -414,52 +477,69 @@ fun MentionRow(label: String, count: Int) {
 fun FormationMap(
     latitude: Double,
     longitude: Double,
-    etablissement: String
+    etablissement: String,
+    onMapInteraction: (Boolean) -> Unit = {}
 ) {
     val cameraState = rememberCameraState(
         CameraPosition(target = Position(longitude, latitude), zoom = 15.0)
     )
     val marker = painterResource(R.drawable.marker)
-    
+    var isInteracting by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isInteracting) {
+        onMapInteraction(isInteracting)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                }
-            }
-            .pointerInput(Unit) {
-                detectTapGestures { /* Consume taps */ }
-            }
+
     ) {
         MaplibreMap(
             baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-            modifier = Modifier.fillMaxSize(),
-        cameraState = cameraState ,
-        styleState = rememberStyleState(),
-        onMapClick = { point, screenPoint ->
-            ClickResult.Pass
-        },
-        options =
-            MapOptions(
-                ornamentOptions = OrnamentOptions.AllDisabled,
-                gestureOptions =
-                    GestureOptions(
-                        isTiltEnabled = true,
-                        isZoomEnabled = true,
-                        isRotateEnabled = true,
-                        isScrollEnabled = true,
-                    ),
-            ),
-    ) {
+            modifier = Modifier.fillMaxSize()
+                .pointerInput(Unit) {
+                    // https://github.com/maplibre/maplibre-compose/issues/726#issuecomment-3620016105
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            isInteracting = when (event.type) {
+                                PointerEventType.Press,
+                                PointerEventType.Move,
+                                PointerEventType.Scroll -> true
 
-        val feat = Feature(geometry = Point(longitude=longitude, latitude=latitude), properties = mapOf("title" to JsonPrimitive(etablissement)))
-        val fc = FeatureCollection(listOf(feat))
-        val source = rememberGeoJsonSource(
-            GeoJsonData.JsonString(fc.toJson()),
-            GeoJsonOptions()
-        )
+                                else -> false
+                            }
+                        }
+                    }
+                },
+            cameraState = cameraState,
+            styleState = rememberStyleState(),
+            onMapClick = { point, screenPoint ->
+                ClickResult.Pass
+            },
+            options =
+                MapOptions(
+                    ornamentOptions = OrnamentOptions.AllDisabled,
+                    gestureOptions =
+                        GestureOptions(
+                            isTiltEnabled = true,
+                            isZoomEnabled = true,
+                            isRotateEnabled = true,
+                            isScrollEnabled = true,
+                        ),
+                ),
+        ) {
+
+            val feat = Feature(
+                geometry = Point(longitude = longitude, latitude = latitude),
+                properties = mapOf("title" to JsonPrimitive(etablissement))
+            )
+            val fc = FeatureCollection(listOf(feat))
+            val source = rememberGeoJsonSource(
+                GeoJsonData.JsonString(fc.toJson()),
+                GeoJsonOptions()
+            )
 
             // Marker icon
             SymbolLayer(
@@ -470,7 +550,7 @@ fun FormationMap(
                 textField = feature["title"].asString(),
                 textFont = const(listOf("Noto Sans Regular")),
                 textColor = const(androidx.compose.ui.graphics.Color.Black),
-                textOffset =  offset(0.em, 0.6.em),
+                textOffset = offset(0.em, 0.6.em),
             )
         }
     }

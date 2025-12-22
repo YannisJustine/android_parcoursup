@@ -5,13 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationStats
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class FormationsViewModel @Inject constructor(
+class FormationsViewModel(
     private val repository: FormationRepository
 ) : ViewModel() {
     

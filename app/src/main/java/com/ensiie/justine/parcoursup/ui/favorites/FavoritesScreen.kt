@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.FavoriteFormation
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
@@ -32,7 +32,7 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 @Composable
 fun FavoritesScreen(
     onNavigateToDetail: (String) -> Unit,
-    viewModel: FavoritesViewModel = hiltViewModel()
+    viewModel: FavoritesViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     

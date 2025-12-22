@@ -4,12 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationStats
+import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
+import com.ensiie.justine.parcoursup.utils.LocationFilter
+import com.ensiie.justine.parcoursup.utils.LocationHelper
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class FormationsViewModel(
-    private val repository: FormationRepository
+    private val repository: FormationRepository,
+    private val adresseRepository: AdresseRepository,
+    private val locationHelper: LocationHelper
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<FormationsUiState>(FormationsUiState.Loading)
@@ -23,6 +28,9 @@ class FormationsViewModel(
     
     private val _selectedTypesEtab = MutableStateFlow<Set<String>>(emptySet())
     val selectedTypesEtab: StateFlow<Set<String>> = _selectedTypesEtab.asStateFlow()
+    
+    private val _locationFilter = MutableStateFlow<LocationFilter?>(null)
+    val locationFilter: StateFlow<LocationFilter?> = _locationFilter.asStateFlow()
     
     private val _filieres = MutableStateFlow<List<String>>(emptyList())
     val filieres: StateFlow<List<String>> = _filieres.asStateFlow()
@@ -75,10 +83,14 @@ class FormationsViewModel(
             
             if (append) _isLoadingMore.value = true
             
+            val location = _locationFilter.value
             repository.searchFormations(
                 name = null,
-                filiere = filieres.firstOrNull(),
-                contratEtab = contratsEtab.firstOrNull(),
+                filieres = filieres,
+                contratsEtab = contratsEtab,
+                latitude = location?.latitude,
+                longitude = location?.longitude,
+                radiusKm = location?.radiusKm,
                 offset = currentOffset,
                 limit = 100
             )
@@ -140,10 +152,14 @@ class FormationsViewModel(
             
             if (append) _isLoadingMore.value = true
             
+            val location = _locationFilter.value
             repository.searchFormations(
                 name = query,
-                filiere = _selectedFilieres.value.firstOrNull(),
-                contratEtab = _selectedTypesEtab.value.firstOrNull(),
+                filieres = _selectedFilieres.value,
+                contratsEtab = _selectedTypesEtab.value,
+                latitude = location?.latitude,
+                longitude = location?.longitude,
+                radiusKm = location?.radiusKm,
                 offset = currentOffset,
                 limit = 50
             )
@@ -208,6 +224,24 @@ class FormationsViewModel(
     fun clearContratsEtab() {
         _selectedTypesEtab.value = emptySet()
         loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+    }
+    
+    fun setLocationFilter(location: LocationFilter) {
+        _locationFilter.value = location
+        if (_searchQuery.value.isBlank()) {
+            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+        } else {
+            searchFormations(_searchQuery.value)
+        }
+    }
+    
+    fun clearLocationFilter() {
+        _locationFilter.value = null
+        if (_searchQuery.value.isBlank()) {
+            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+        } else {
+            searchFormations(_searchQuery.value)
+        }
     }
     
     fun toggleFavorite(formation: Formation) {

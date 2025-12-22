@@ -80,9 +80,9 @@ fun FavoritesScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    Text(
+                    DsfrText(
                         text = stringResource(R.string.my_favorites, state.favorites.size),
-                        style = MaterialTheme.typography.titleLarge,
+                        textStyle = DsfrTextStyle.HeadingLg,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }

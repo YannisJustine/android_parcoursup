@@ -2,12 +2,15 @@ package com.ensiie.justine.parcoursup.di
 
 import androidx.room.Room
 import com.ensiie.justine.parcoursup.data.local.ParcoursupDatabase
+import com.ensiie.justine.parcoursup.data.network.AdresseApiService
 import com.ensiie.justine.parcoursup.data.network.ParcoursupApiService
+import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
 import com.ensiie.justine.parcoursup.ui.detail.FormationDetailViewModel
 import com.ensiie.justine.parcoursup.ui.favorites.FavoritesViewModel
 import com.ensiie.justine.parcoursup.ui.formations.FormationsViewModel
 import com.ensiie.justine.parcoursup.ui.map.MapViewModel
+import com.ensiie.justine.parcoursup.utils.LocationHelper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -15,12 +18,14 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 private const val BASE_URL = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/"
+private const val ADRESSE_BASE_URL = "https://api-adresse.data.gouv.fr/"
 
 val appModule = module {
     
@@ -53,10 +58,23 @@ val appModule = module {
             .addConverterFactory(MoshiConverterFactory.create(get()))
             .build()
     }
+
+    single<Retrofit>(qualifier = named("adresse")) {
+        Retrofit.Builder()
+            .baseUrl(ADRESSE_BASE_URL)
+            .client(get())
+            .addConverterFactory(MoshiConverterFactory.create(get()))
+            .build()
+    }
     
-    // API Service
+    // API Services
     single {
         get<Retrofit>().create(ParcoursupApiService::class.java)
+    }
+    
+    single {
+        get<Retrofit>(qualifier = named("adresse"))
+            .create(AdresseApiService::class.java)
     }
     
     // Room Database
@@ -71,8 +89,12 @@ val appModule = module {
     // DAO
     single { get<ParcoursupDatabase>().favoriteFormationDao() }
     
-    // Repository
+    // Repositories
     singleOf(::FormationRepository)
+    singleOf(::AdresseRepository)
+
+    // Helpers    
+    single { LocationHelper(get()) }
     
     // ViewModels
     viewModelOf(::FormationsViewModel)

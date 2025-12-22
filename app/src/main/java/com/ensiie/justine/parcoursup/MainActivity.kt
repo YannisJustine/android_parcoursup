@@ -31,7 +31,7 @@ import com.ensiie.justine.parcoursup.ui.detail.FormationDetailScreen
 import com.ensiie.justine.parcoursup.ui.favorites.FavoritesScreen
 import com.ensiie.justine.parcoursup.ui.formations.FormationsScreen
 import com.ensiie.justine.parcoursup.ui.map.MapScreen
-import com.ensiie.justine.parcoursup.ui.theme.ParcoursupTheme
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,11 +104,20 @@ fun ParcoursupApp() {
                 }
             ) { isVisible ->
                 if (isVisible) {
-                    NavigationBar {
+                    NavigationBar(
+                        containerColor = DSFRTheme.colors.backgroundRaised,
+                    ) {
                         TopLevelDestination.entries.forEach { destination ->
                             val selected = destination.route == navigationState.topLevelRoute
 
                             NavigationBarItem(
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = DSFRTheme.colors.actionHigh,
+                                    unselectedIconColor = DSFRTheme.colors.textDefault,
+                                    selectedTextColor = DSFRTheme.colors.actionHigh,
+                                    unselectedTextColor = DSFRTheme.colors.textDefault,
+                                    indicatorColor = DSFRTheme.colors.backgroundActionLow
+                                ),
                                 selected = selected,
                                 onClick = { navigator.navigate(destination.route) },
                                 icon = {

@@ -5,34 +5,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,24 +32,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.DpSize
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.unit.em
 import org.maplibre.compose.expressions.dsl.image
-import androidx.compose.ui.unit.em
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import com.ensiie.justine.parcoursup.R
@@ -86,49 +73,18 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.GeoJsonOptions
-import org.maplibre.compose.layers.CircleLayer
 import org.maplibre.compose.layers.SymbolLayer
 import org.maplibre.compose.expressions.dsl.feature
 import org.maplibre.compose.expressions.dsl.const
-import org.maplibre.compose.expressions.dsl.step
-import org.maplibre.compose.expressions.dsl.asNumber
 import org.maplibre.compose.expressions.dsl.asString
-import org.maplibre.compose.expressions.dsl.not
 import org.maplibre.compose.expressions.dsl.offset
 import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.FeatureCollection
 import org.maplibre.spatialk.geojson.Point
 import org.maplibre.spatialk.geojson.toJson
 import kotlinx.serialization.json.JsonPrimitive
-import org.maplibre.compose.camera.rememberCameraState
-import org.maplibre.compose.expressions.dsl.Feature.get
 import org.maplibre.compose.map.MaplibreMap
 
-
-import kotlinx.serialization.json.JsonPrimitive
-import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.rememberCameraState
-import org.maplibre.compose.expressions.dsl.asString
-import org.maplibre.compose.expressions.dsl.const
-import org.maplibre.compose.expressions.dsl.feature
-import org.maplibre.compose.expressions.dsl.image
-import org.maplibre.compose.expressions.dsl.offset
-import org.maplibre.compose.layers.SymbolLayer
-import org.maplibre.compose.map.GestureOptions
-import org.maplibre.compose.map.MapOptions
-import org.maplibre.compose.map.MaplibreMap
-import org.maplibre.compose.map.OrnamentOptions
-import org.maplibre.compose.sources.GeoJsonData
-import org.maplibre.compose.sources.GeoJsonOptions
-import org.maplibre.compose.sources.rememberGeoJsonSource
-import org.maplibre.compose.style.BaseStyle
-import org.maplibre.compose.style.rememberStyleState
-import org.maplibre.compose.util.ClickResult
-import org.maplibre.spatialk.geojson.Feature
-import org.maplibre.spatialk.geojson.FeatureCollection
-import org.maplibre.spatialk.geojson.Point
-import org.maplibre.spatialk.geojson.Position
-import org.maplibre.spatialk.geojson.toJson
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,49 +97,46 @@ fun FormationDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)
 
-    DsfrScaffold(
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DSFRTheme.colors.backgroundRaised,
-                    titleContentColor = DSFRTheme.colors.textDefault,
-                    navigationIconContentColor = DSFRTheme.colors.textDefault,
-                    actionIconContentColor = DSFRTheme.colors.textDefault
-                ),
-                title = { DsfrText(stringResource(R.string.details), textStyle = DsfrTextStyle.HeadingLg) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = DSFRTheme.colors.backgroundRaised,
+                titleContentColor = DSFRTheme.colors.textDefault,
+                navigationIconContentColor = DSFRTheme.colors.textDefault,
+                actionIconContentColor = DSFRTheme.colors.textDefault
+            ),
+            windowInsets = WindowInsets(0.dp),
+            title = { DsfrText(stringResource(R.string.details), textStyle = DsfrTextStyle.HeadingLg) },
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
+            },
+            actions = {
+                if (uiState is DetailUiState.Success) {
+                    IconButton(onClick = { viewModel.toggleFavorite() }) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            imageVector = if (isFavorite) Icons.Filled.Favorite
+                                         else Icons.Filled.FavoriteBorder,
+                            contentDescription = stringResource(
+                                if (isFavorite) R.string.remove_from_favorites
+                                else R.string.add_to_favorites
+                            ),
+                            tint = if (isFavorite) DSFRTheme.colors.error
+                                   else DSFRTheme.colors.textDefault
                         )
                     }
-                },
-                actions = {
-                    if (uiState is DetailUiState.Success) {
-                        IconButton(onClick = { viewModel.toggleFavorite() }) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite
-                                             else Icons.Filled.FavoriteBorder,
-                                contentDescription = stringResource(
-                                    if (isFavorite) R.string.remove_from_favorites
-                                    else R.string.add_to_favorites
-                                ),
-                                tint = if (isFavorite) DSFRTheme.colors.error
-                                       else DSFRTheme.colors.textDefault
-                            )
-                        }
-                    }
                 }
-            )
-        }
-    ) { padding ->
+            }
+        )
+
         when (val state = uiState) {
             is DetailUiState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     DsfrCircularProgressIndicator()
@@ -194,15 +147,13 @@ fun FormationDetailScreen(
                 FormationDetailContent(
                     formation = state.formation,
                     baseFormation = state.baseFormation,
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
             is DetailUiState.Error -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -312,76 +263,106 @@ fun FormationDetailContent(
         }
 
         DsfrText(
-            text = stringResource(R.string.gender_distribution),
+            text = "Statistiques de répartition",
             textStyle = DsfrTextStyle.HeadingMd,
         )
 
-        DsfrCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ProgressRow(
-                    label = stringResource(R.string.women),
-                    percentage = formation.pctFemmes ?: 0.0,
-                    count = formation.accFemmes ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.men),
-                    percentage = 100 - (formation.pctFemmes ?: 0.0),
-                    count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
+        val tabs = listOf(
+            stringResource(R.string.gender_distribution),
+            stringResource(R.string.bac_distribution),
+            stringResource(R.string.bac_mentions)
+        )
+        val pagerState = rememberPagerState(pageCount = { tabs.size })
+        val coroutineScope = rememberCoroutineScope()
+
+        SecondaryScrollableTabRow(
+            selectedTabIndex = pagerState.currentPage,
+            containerColor = DSFRTheme.colors.backgroundDefault,
+            contentColor = DSFRTheme.colors.textDefault,
+            edgePadding = 0.dp
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = pagerState.currentPage == index,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
+                    text = {
+                        DsfrText(
+                            text = title,
+                            textStyle = DsfrTextStyle.BodyMd,
+                            color = if (pagerState.currentPage == index) DsfrTextColor.Primary else DsfrTextColor.Mention
+                        )
+                    }
                 )
             }
         }
 
-        DsfrText(
-            text = stringResource(R.string.bac_distribution),
-            textStyle = DsfrTextStyle.HeadingMd,
-        )
-
-        DsfrCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ProgressRow(
-                    label = stringResource(R.string.bac_general),
-                    percentage = formation.pctBacGeneral ?: 0.0,
-                    count = formation.accBacGeneral ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.bac_tech),
-                    percentage = formation.pctBacTech ?: 0.0,
-                    count = formation.accBacTech ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.bac_pro),
-                    percentage = formation.pctBacPro ?: 0.0,
-                    count = formation.accBacPro ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.bac_autre),
-                    percentage = 100 - (formation.pctBacPro ?: 0.0) - (formation.pctBacTech ?: 0.0) - (formation.pctBacGeneral ?: 0.0),
-                    count = 100 - (formation.accBacPro ?: 0) - (formation.accBacGeneral ?: 0) - (formation.accBacTech ?: 0)
-                )
-            }
-        }
-
-        DsfrText(
-            text = stringResource(R.string.bac_mentions),
-            textStyle = DsfrTextStyle.DisplayMd
-        )
-
-        DsfrCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                MentionRow(stringResource(R.string.mention_none), formation.mentionSans ?: 0)
-                MentionRow(stringResource(R.string.mention_ab), formation.mentionAB ?: 0)
-                MentionRow(stringResource(R.string.mention_b), formation.mentionB ?: 0)
-                MentionRow(stringResource(R.string.mention_tb), formation.mentionTB ?: 0)
-                MentionRow(stringResource(R.string.mention_tbf), formation.mentionTBF?.toInt() ?: 0)
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth()
+        ) { page ->
+            DsfrCard(modifier = Modifier.fillMaxWidth()) {
+                when (page) {
+                    0 -> {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ProgressRow(
+                                label = stringResource(R.string.women),
+                                percentage = formation.pctFemmes ?: 0.0,
+                                count = formation.accFemmes ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.men),
+                                percentage = 100 - (formation.pctFemmes ?: 0.0),
+                                count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
+                            )
+                        }
+                    }
+                    1 -> {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ProgressRow(
+                                label = stringResource(R.string.bac_general),
+                                percentage = formation.pctBacGeneral ?: 0.0,
+                                count = formation.accBacGeneral ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.bac_tech),
+                                percentage = formation.pctBacTech ?: 0.0,
+                                count = formation.accBacTech ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.bac_pro),
+                                percentage = formation.pctBacPro ?: 0.0,
+                                count = formation.accBacPro ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.bac_autre),
+                                percentage = 100 - (formation.pctBacPro ?: 0.0) - (formation.pctBacTech ?: 0.0) - (formation.pctBacGeneral ?: 0.0),
+                                count = 100 - (formation.accBacPro ?: 0) - (formation.accBacGeneral ?: 0) - (formation.accBacTech ?: 0)
+                            )
+                        }
+                    }
+                    2 -> {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            MentionRow(stringResource(R.string.mention_none), formation.mentionSans ?: 0)
+                            MentionRow(stringResource(R.string.mention_ab), formation.mentionAB ?: 0)
+                            MentionRow(stringResource(R.string.mention_b), formation.mentionB ?: 0)
+                            MentionRow(stringResource(R.string.mention_tb), formation.mentionTB ?: 0)
+                            MentionRow(stringResource(R.string.mention_tbf), formation.mentionTBF?.toInt() ?: 0)
+                        }
+                    }
+                }
             }
         }
 

@@ -15,8 +15,11 @@ class FormationRepository(
     
     suspend fun searchFormations(
         name: String? = null,
-        filiere: String? = null,
-        contratEtab: String? = null,
+        filieres: Set<String> = emptySet(),
+        contratsEtab: Set<String> = emptySet(),
+        latitude: Double? = null,
+        longitude: Double? = null,
+        radiusKm: Int? = null,
         offset: Int = 0,
         limit: Int = 50
     ): Result<List<Formation>> = try {
@@ -25,14 +28,25 @@ class FormationRepository(
         name?.takeIf { it.isNotBlank() }?.let { 
             whereConditions.add("g_ea_lib_vx LIKE \"$it\"")
         }
-        filiere?.let { whereConditions.add("fili=\"$it\"") }
-        contratEtab?.let {
-            whereConditions.add("contrat_etab=\"$it\"")
+        
+        if (filieres.isNotEmpty()) {
+            val orConditions = filieres.joinToString(" OR ") { "fili=\"$it\"" }
+            whereConditions.add("($orConditions)")
+        }
+        
+        if (contratsEtab.isNotEmpty()) {
+            val orConditions = contratsEtab.joinToString(" OR ") { "contrat_etab=\"$it\"" }
+            whereConditions.add("($orConditions)")
+        }
+        
+        if (latitude != null && longitude != null && radiusKm != null) {
+            val radiusMeters = radiusKm * 1000
+            whereConditions.add("within_distance(g_olocalisation_des_formations, geom'POINT($longitude $latitude)', ${radiusMeters}m)")
         }
         
         val whereClause = whereConditions.joinToString(" AND ")
-        
         val response = apiService.searchFormations(where = whereClause, offset = offset, limit = limit)
+        
         Result.success(response.results)
     } catch (e: Exception) {
         Result.failure(e)

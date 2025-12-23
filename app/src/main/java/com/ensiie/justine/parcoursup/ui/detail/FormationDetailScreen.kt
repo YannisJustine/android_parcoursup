@@ -3,6 +3,7 @@ package com.ensiie.justine.parcoursup.ui.detail
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -88,6 +89,7 @@ import org.maplibre.spatialk.geojson.toJson
 import kotlinx.serialization.json.JsonPrimitive
 import org.maplibre.compose.map.MaplibreMap
 import androidx.core.net.toUri
+import com.ensiie.justine.parcoursup.data.model.EtablissementContactInfo
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,7 +97,7 @@ import androidx.core.net.toUri
 fun FormationDetailScreen(
     id: String,
     onNavigateBack: () -> Unit,
-    viewModel: FormationDetailViewModel = koinViewModel { parametersOf(id) }
+    viewModel: FormationDetailViewModel = koinViewModel(key = id) { parametersOf(id) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)
@@ -149,7 +151,7 @@ fun FormationDetailScreen(
             is DetailUiState.Success -> {
                 FormationDetailContent(
                     formation = state.formation,
-                    baseFormation = state.baseFormation,
+                    etablissementInfo = state.etablissementInfo,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -181,7 +183,7 @@ fun FormationDetailScreen(
 @Composable
 fun FormationDetailContent(
     formation: Formation,
-    baseFormation: Formation,
+    etablissementInfo: EtablissementContactInfo,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -190,8 +192,9 @@ fun FormationDetailContent(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(
-                    enabled = isScrollEnabled,
-                state = rememberScrollState())
+                enabled = isScrollEnabled,
+                state = rememberScrollState()
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -370,13 +373,12 @@ fun FormationDetailContent(
             }
         }
 
-        val coords = baseFormation.coordonnees
+        val coords = formation.coordonnees
         if (coords != null && coords.size >= 2) {
             DsfrText(
                 text = stringResource(R.string.location),
-                textStyle = DsfrTextStyle.DisplayMd
+                textStyle = DsfrTextStyle.HeadingMd
             )
-
             DsfrCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -385,18 +387,31 @@ fun FormationDetailContent(
                 FormationMap(
                     latitude = coords[0],
                     longitude = coords[1],
-                    etablissement = baseFormation.etablissement ?: "",
+                    etablissement = formation.etablissement ?: "",
                     onMapInteraction = { isInteracting ->
                         isScrollEnabled = !isInteracting
                     },
-                    onMarkerClick = { 
+                    onMarkerClick = {
                         val latitude = coords[0]
                         val longitude = coords[1]
-                        val label = baseFormation.etablissement ?: "Formation Location"
+                        val label = formation.etablissement ?: "Formation Location"
                         val gmmIntentUri = "geo:$latitude,$longitude?q=$latitude,$longitude($label)".toUri()
                         val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
                         context.startActivity(mapIntent)
                     }
+                )
+            }
+        }
+
+        if(etablissementInfo.nom.isNotEmpty()) {
+            DsfrText(
+                text = stringResource(R.string.contact_information),
+                textStyle = DsfrTextStyle.HeadingMd
+            )
+            DsfrCard(modifier = Modifier.fillMaxWidth()) {
+                EtablissementContactContent(
+                    contactInfo = etablissementInfo,
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }
@@ -491,7 +506,8 @@ fun FormationMap(
     ) {
         MaplibreMap(
             baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .pointerInput(Unit) {
                     // https://github.com/maplibre/maplibre-compose/issues/726#issuecomment-3620016105
                     awaitPointerEventScope {
@@ -550,6 +566,99 @@ fun FormationMap(
                     return@SymbolLayer ClickResult.Consume
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun EtablissementContactContent(
+    contactInfo: EtablissementContactInfo,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        DsfrText(
+            text = contactInfo.nom,
+            textStyle = DsfrTextStyle.HeadingMd
+        )
+        if (!contactInfo.adresse.isNullOrEmpty()) {
+            DsfrText(
+                text = contactInfo.adresse,
+                textStyle = DsfrTextStyle.BodyMd
+            )
+        }
+        if (!contactInfo.codePostal.isNullOrEmpty() && !contactInfo.commune.isNullOrEmpty()) {
+            DsfrText(
+                text = "${contactInfo.codePostal} ${contactInfo.commune}",
+                textStyle = DsfrTextStyle.BodyMd
+            )
+        }
+        if (!contactInfo.telephone.isNullOrEmpty()) {
+            val context = LocalContext.current
+            Row {
+                DsfrText(
+                    text = "Tel: ",
+                    textStyle = DsfrTextStyle.BodyMd
+                )
+                DsfrText(
+                    text = contactInfo.telephone,
+                    textStyle = DsfrTextStyle.BodyMd,
+                    color = DsfrTextColor.Info,
+                    modifier = Modifier
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                        val intent = Intent(Intent.ACTION_DIAL,
+                            "tel:${contactInfo.telephone}".toUri())
+                        context.startActivity(intent)
+                        }
+                    }
+                )
+            }
+        }
+        if (!contactInfo.mail.isNullOrEmpty()) {
+            val context = LocalContext.current
+            Row {
+                DsfrText(
+                    text = "Email: ",
+                    textStyle = DsfrTextStyle.BodyMd
+                )
+                DsfrText(
+                    text = contactInfo.mail,
+                    textStyle = DsfrTextStyle.BodyMd,
+                    color = DsfrTextColor.Info,
+                    modifier = Modifier
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                        val intent = Intent(Intent.ACTION_SENDTO,
+                            "mailto:${contactInfo.mail}".toUri())
+                        context.startActivity(intent)
+                        }
+                    }
+                )
+            }
+        }
+        if (!contactInfo.siteWeb.isNullOrEmpty()) {
+            val context = LocalContext.current
+            Row {
+                DsfrText(
+                    text = "Site Web: ",
+                    textStyle = DsfrTextStyle.BodyMd
+                )
+                DsfrText(
+                    text = contactInfo.siteWeb,
+                    textStyle = DsfrTextStyle.BodyMd,
+                    color = DsfrTextColor.Info,
+                    modifier = Modifier
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                        val intent = Intent(Intent.ACTION_VIEW, contactInfo.siteWeb.toUri())
+                        context.startActivity(intent)
+                        }
+                    }
+                )
+            }
         }
     }
 }

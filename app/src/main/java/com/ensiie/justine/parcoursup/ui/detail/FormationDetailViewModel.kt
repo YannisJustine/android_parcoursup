@@ -2,14 +2,17 @@ package com.ensiie.justine.parcoursup.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ensiie.justine.parcoursup.data.model.EtablissementContactInfo
 import com.ensiie.justine.parcoursup.data.model.Formation
+import com.ensiie.justine.parcoursup.data.repository.EtablissementRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class FormationDetailViewModel(
     private val recordId: String,
-    private val repository: FormationRepository
+    private val repository: FormationRepository,
+    private val etablissementRepository: EtablissementRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
@@ -18,16 +21,26 @@ class FormationDetailViewModel(
     val isFavorite: Flow<Boolean> = repository.isFavorite(recordId)
     
     init {
+        println("FormationDetailViewModel créé avec recordId: $recordId")
         loadFormationDetail()
     }
     
     private fun loadFormationDetail() {
         viewModelScope.launch {
+            println("Chargement de la formation avec recordId: $recordId")
             _uiState.value = DetailUiState.Loading
-            
             repository.getFormationById(recordId)
                 .onSuccess { formation ->
-                    _uiState.value = DetailUiState.Success(formation, formation)
+                println("Formation trouvée: $formation")
+                    etablissementRepository.getEtablissementContactInfo(formation.etabUai)
+                        .onSuccess { etablissementInfo ->
+                            _uiState.value = DetailUiState.Success(formation, etablissementInfo)
+                        }
+                        .onFailure { error ->
+                            _uiState.value = DetailUiState.Error(
+                                error.message ?: "Erreur de chargement"
+                            )
+                        }
                 }
                 .onFailure { error ->
                     _uiState.value = DetailUiState.Error(
@@ -61,6 +74,6 @@ class FormationDetailViewModel(
 
 sealed interface DetailUiState {
     data object Loading : DetailUiState
-    data class Success(val formation: Formation, val baseFormation: Formation) : DetailUiState
+    data class Success(val formation: Formation, val etablissementInfo: EtablissementContactInfo) : DetailUiState
     data class Error(val message: String) : DetailUiState
 }

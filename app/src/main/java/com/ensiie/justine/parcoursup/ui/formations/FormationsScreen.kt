@@ -4,6 +4,7 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -52,6 +53,7 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrFilterChip
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrIconButton
 import androidx.compose.material3.Icon
 import androidx.room.util.copy
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButtonType
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTag
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagSize
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagType
@@ -163,31 +165,46 @@ fun FormationsScreen(
                         )
                     }
                 ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        state = listState
-                    ) {
-                        items(state.formations, key = { it.id }) { formation ->
-                            FormationCard(
-                                formation = formation,
-                                onClick = { onNavigateToDetail(formation.id) },
-                                onFavoriteClick = { viewModel.toggleFavorite(formation) },
-                                isFavorite = viewModel.isFavorite(formation.id)
-                                    .collectAsState(initial = false).value
+                    if (state.formations.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            DsfrText(
+                                text = "Aucune formation trouvée.",
+                                textStyle = DsfrTextStyle.BodyMd,
+                                color = DsfrTextColor.Label
                             )
                         }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            state = listState
+                        ) {
+                            items(state.formations, key = { it.id }) { formation ->
+                                FormationCard(
+                                    formation = formation,
+                                    onClick = { onNavigateToDetail(formation.id) },
+                                    onFavoriteClick = { viewModel.toggleFavorite(formation) },
+                                    isFavorite = viewModel.isFavorite(formation.id)
+                                        .collectAsState(initial = false).value
+                                )
+                            }
 
-                        if (isLoadingMore) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    DsfrCircularProgressIndicator()
+                            if (isLoadingMore) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        DsfrCircularProgressIndicator()
+                                    }
                                 }
                             }
                         }
@@ -283,9 +300,8 @@ fun FormationsScreen(
         }
 
         LocationSearchModal(
-            adresseRepository = adresseRepository,
             locationSheetState = locationSheetState,
-            onDismiss = { 
+            onDismiss = {
                 showLocationModal = false
                 locationError = null
             },
@@ -304,8 +320,6 @@ fun FormationsScreen(
                 if (locationHelper.areLocationPermissionsGranted()) {
                     isLoadingLocation = true
                     locationError = null
-                 
-                    
                     locationHelper.getCurrentLocation(
                         onGetCurrentLocationSuccess = { (latitude, longitude) ->
                             viewModel.setLocationFilter(
@@ -333,8 +347,21 @@ fun FormationsScreen(
                     )
                 }
             },
+            searchCities = { query -> adresseRepository.searchCities(query) },
             isLoadingLocation = isLoadingLocation,
-            locationError = locationError
+            locationError = locationError,
+            initialRadius = locationFilter?.radiusKm ?: 10,
+            initialCity = locationFilter?.let {
+                if (it.cityName != null) {
+                    City(
+                        name = it.cityName,
+                        fullLabel = it.cityName,
+                        longitude = it.longitude,
+                        latitude = it.latitude,
+                        context = ""
+                    )
+                } else null
+            }
         )
     }
 }
@@ -511,64 +538,113 @@ fun FilterModalBottomSheet(
     onToggleOption: (String) -> Unit,
     onClearAll: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val minHeight = configuration.screenHeightDp * 0.5f
-    val maxHeight = configuration.screenHeightDp * 0.9f
-
+    var tempSelectedOptions by remember { mutableStateOf(selectedOptions) }
+    
     ModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = onDismissRequest,
-        containerColor = DSFRTheme.colors.backgroundDefault
+        containerColor = DSFRTheme.colors.backgroundDefault,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = minHeight.dp, max = maxHeight.dp)
                 .padding(16.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .weight(1f, fill = false)
+                    .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.7f)
             ) {
-                DsfrText(
-                    text = title,
-                    textStyle = DsfrTextStyle.HeadingMd
-                )
-                
-                if (selectedOptions.isNotEmpty()) {
-                    DsfrTextButton(onClick = onClearAll) {
-                        Text("Tout effacer")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DsfrText(
+                        text = title,
+                        textStyle = DsfrTextStyle.HeadingMd
+                    )
+                    
+                    if (tempSelectedOptions.isNotEmpty()) {
+                        DsfrTextButton(onClick = { tempSelectedOptions = emptySet() }) {
+                            Text("Tout effacer")
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(options) { option ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { 
+                                    tempSelectedOptions = if (tempSelectedOptions.contains(option)) {
+                                        tempSelectedOptions - option
+                                    } else {
+                                        tempSelectedOptions + option
+                                    }
+                                }
+                                .padding(vertical = DSFRTheme.spacing.xs),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = tempSelectedOptions.contains(option),
+                                onCheckedChange = { 
+                                    tempSelectedOptions = if (tempSelectedOptions.contains(option)) {
+                                        tempSelectedOptions - option
+                                    } else {
+                                        tempSelectedOptions + option
+                                    }
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = DSFRTheme.colors.actionHigh,
+                                    uncheckedColor = DSFRTheme.colors.textDefault
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
+                            DsfrText(
+                                text = option
+                            )
+                        }
                     }
                 }
             }
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.End
             ) {
-                items(options) { option ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onToggleOption(option) }
-                            .padding(vertical = DSFRTheme.spacing.xs),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = selectedOptions.contains(option),
-                            onCheckedChange = { onToggleOption(option) },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = DSFRTheme.colors.actionHigh,
-                                uncheckedColor = DSFRTheme.colors.textDefault
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
-                        DsfrText(
-                            text = option
-                        )
+                DsfrButton(
+                    onClick = onDismissRequest,
+                    modifier = Modifier.padding(end = 8.dp),
+                    type = DsfrButtonType.Secondary
+                ) {
+                    Text("Annuler")
+                }
+                DsfrButton(
+                    onClick = {
+                        val toRemove = selectedOptions - tempSelectedOptions
+                        val toAdd = tempSelectedOptions - selectedOptions
+                        
+                        toRemove.forEach { onToggleOption(it) }
+                        toAdd.forEach { onToggleOption(it) }
+                        
+                        if (tempSelectedOptions.isEmpty() && selectedOptions.isNotEmpty()) {
+                            onClearAll()
+                        }
+                        
+                        onDismissRequest()
                     }
+                ) {
+                    Text("Valider")
                 }
             }
         }
@@ -658,25 +734,28 @@ fun LocationSearchModal(
     locationSheetState: SheetState,
     onLocationSelected: (City, Int) -> Unit,
     onUseCurrentLocation: (Int) -> Unit,
-    adresseRepository: AdresseRepository,
+    searchCities: suspend (String) -> Result<List<City>>,
     isLoadingLocation: Boolean,
-    locationError: String? = null
+    locationError: String? = null,
+    initialRadius: Int = 10,
+    initialCity: City? = null
 ) {
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf(initialCity?.name ?: "") }
     var cities by remember { mutableStateOf<List<City>>(emptyList()) }
-    var selectedRadius by remember { mutableStateOf(10) }
+    var selectedRadius by remember { mutableStateOf(initialRadius) }
     var isSearching by remember { mutableStateOf(false) }
+    var selectedCity by remember { mutableStateOf<City?>(initialCity) }
     val scope = rememberCoroutineScope()
-    val configuration = LocalConfiguration.current
-    val minHeight = configuration.screenHeightDp * 0.6f
-    val maxHeight = configuration.screenHeightDp * 0.9f
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.length >= 2) {
             isSearching = true
-            adresseRepository.searchCities(searchQuery)
-                .onSuccess { cities = it }
-                .onFailure { cities = emptyList() }
+            kotlinx.coroutines.delay(400)
+            if (searchQuery.length >= 2) {
+                searchCities(searchQuery)
+                    .onSuccess { cities = it }
+                    .onFailure { cities = emptyList() }
+            }
             isSearching = false
         } else {
             cities = emptyList()
@@ -686,127 +765,159 @@ fun LocationSearchModal(
     ModalBottomSheet(
         sheetState = locationSheetState,
         onDismissRequest = onDismiss,
-        containerColor = DSFRTheme.colors.backgroundDefault
-    ) {
+        containerColor = DSFRTheme.colors.backgroundDefault,
+        modifier = Modifier.fillMaxWidth()
+) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = minHeight.dp, max = maxHeight.dp)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp)
         ) {
-            DsfrText(
-                text = "Rechercher par localisation",
-                textStyle = DsfrTextStyle.HeadingMd
-            )
-
-            DsfrButton(
-                onClick = { onUseCurrentLocation(selectedRadius) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoadingLocation
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.7f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (isLoadingLocation) {
-                    DsfrCircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.MyLocation,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                DsfrText("Utiliser ma position")
-            }
+                DsfrText(
+                    text = "Rechercher par localisation",
+                    textStyle = DsfrTextStyle.HeadingMd
+                )
 
-            if (locationError != null) {
-                DsfrCard(
-                    modifier = Modifier.fillMaxWidth()
+                DsfrButton(
+                    onClick = { onUseCurrentLocation(selectedRadius) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoadingLocation
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    if (isLoadingLocation) {
+                        DsfrCircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                        )
+                    } else {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Default.MyLocation,
                             contentDescription = null,
-                            tint = DSFRTheme.colors.error,
                             modifier = Modifier.size(20.dp)
                         )
-                        DsfrText(
-                            text = locationError,
-                            textStyle = DsfrTextStyle.BodySm,
-                            color = DsfrTextColor.Error
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    DsfrText("Utiliser ma position")
+                }
+
+                if (locationError != null) {
+                    DsfrCard(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = DSFRTheme.colors.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            DsfrText(
+                                text = locationError,
+                                textStyle = DsfrTextStyle.BodySm,
+                                color = DsfrTextColor.Error
+                            )
+                        }
+                    }
+                }
+
+                DsfrTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Rechercher une ville...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                DsfrText(
+                    text = "Rayon de recherche",
+                    textStyle = DsfrTextStyle.BodyMd,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(5, 10, 25, 50, 100).forEach { radius ->
+                        DsfrFilterChip(
+                            selected = selectedRadius == radius,
+                            onClick = { selectedRadius = radius },
+                            label = { DsfrText("$radius km", textStyle = DsfrTextStyle.BodySm) },
                         )
                     }
                 }
-            }
 
-            DsfrTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Rechercher une ville...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            DsfrText(
-                text = "Rayon de recherche",
-                textStyle = DsfrTextStyle.BodyMd,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(5, 10, 25, 50, 100).forEach { radius ->
-                    DsfrFilterChip(
-                        selected = selectedRadius == radius,
-                        onClick = { selectedRadius = radius },
-                        label = { DsfrText("$radius km", textStyle = DsfrTextStyle.BodySm) },
-                    )
-                }
-            }
-
-            if (isSearching) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    DsfrCircularProgressIndicator()
-                }
-            } else if (cities.isNotEmpty()) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    state = rememberLazyListState()
-                ) {
-                    items(cities) { city ->
-                        DsfrCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onLocationSelected(city, selectedRadius)
+                if (isSearching) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        DsfrCircularProgressIndicator()
+                    }
+                } else if (cities.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        state = rememberLazyListState()
+                    ) {
+                        items(cities) { city ->
+                            DsfrCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedCity = city
+                                    }
+                                    .then(if (selectedCity == city) Modifier.border(2.dp, DSFRTheme.colors.actionHigh) else Modifier),
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    DsfrText(
+                                        text = city.name,
+                                        textStyle = DsfrTextStyle.BodyMd,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    DsfrText(
+                                        text = city.context,
+                                        textStyle = DsfrTextStyle.BodySm,
+                                        color = DsfrTextColor.Mention
+                                    )
                                 }
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                DsfrText(
-                                    text = city.name,
-                                    textStyle = DsfrTextStyle.BodyMd,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                DsfrText(
-                                    text = city.context,
-                                    textStyle = DsfrTextStyle.BodySm,
-                                    color = DsfrTextColor.Mention
-                                )
                             }
                         }
                     }
+                }
+            }
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                DsfrButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.padding(end = 8.dp),
+                    type = DsfrButtonType.Secondary
+                ) {
+                    Text("Annuler")
+                }
+                DsfrButton(
+                    onClick = {
+                        if (selectedCity != null) {
+                            onLocationSelected(selectedCity!!, selectedRadius)
+                        }
+                    },
+                    enabled = selectedCity != null
+                ) {
+                    Text("Valider")
                 }
             }
         }

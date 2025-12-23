@@ -1,6 +1,8 @@
 package com.ensiie.justine.parcoursup.ui.detail
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.em
 import org.maplibre.compose.expressions.dsl.image
 import org.koin.compose.viewmodel.koinViewModel
@@ -84,7 +87,7 @@ import org.maplibre.spatialk.geojson.Point
 import org.maplibre.spatialk.geojson.toJson
 import kotlinx.serialization.json.JsonPrimitive
 import org.maplibre.compose.map.MaplibreMap
-
+import androidx.core.net.toUri
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,6 +184,7 @@ fun FormationDetailContent(
     baseFormation: Formation,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var isScrollEnabled by remember { mutableStateOf(true) }
     Column(
         modifier = modifier
@@ -384,6 +388,14 @@ fun FormationDetailContent(
                     etablissement = baseFormation.etablissement ?: "",
                     onMapInteraction = { isInteracting ->
                         isScrollEnabled = !isInteracting
+                    },
+                    onMarkerClick = { 
+                        val latitude = coords[0]
+                        val longitude = coords[1]
+                        val label = baseFormation.etablissement ?: "Formation Location"
+                        val gmmIntentUri = "geo:$latitude,$longitude?q=$latitude,$longitude($label)".toUri()
+                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                        context.startActivity(mapIntent)
                     }
                 )
             }
@@ -459,7 +471,8 @@ fun FormationMap(
     latitude: Double,
     longitude: Double,
     etablissement: String,
-    onMapInteraction: (Boolean) -> Unit = {}
+    onMapInteraction: (Boolean) -> Unit = {},
+    onMarkerClick: () -> Unit = {}
 ) {
     val cameraState = rememberCameraState(
         CameraPosition(target = Position(longitude, latitude), zoom = 15.0)
@@ -532,6 +545,10 @@ fun FormationMap(
                 textFont = const(listOf("Noto Sans Regular")),
                 textColor = const(androidx.compose.ui.graphics.Color.Black),
                 textOffset = offset(0.em, 0.6.em),
+                onClick = { point ->
+                    onMarkerClick()
+                    return@SymbolLayer ClickResult.Consume
+                }
             )
         }
     }

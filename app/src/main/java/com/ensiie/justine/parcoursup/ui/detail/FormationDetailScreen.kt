@@ -97,6 +97,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.maplibre.compose.map.MaplibreMap
 import androidx.core.net.toUri
 import com.ensiie.justine.parcoursup.data.model.EtablissementContactInfo
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButton
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -531,6 +532,8 @@ fun FormationMap(
     )
     val marker = painterResource(R.drawable.marker)
     var isInteracting by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(isInteracting) {
         onMapInteraction(isInteracting)
@@ -602,7 +605,24 @@ fun FormationMap(
                     onMarkerClick()
                     return@SymbolLayer ClickResult.Consume
                 }
-            )
+            )      
+        }
+        DsfrButton(
+            onClick = {
+                coroutineScope.launch {
+                    cameraState.animateTo(
+                        cameraState.position.copy(
+                            target = Position(longitude, latitude),
+                            zoom = 15.0,
+                        )
+                    )
+                }
+            },
+            modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(DSFRTheme.spacing.sm)
+        ) {
+            DsfrText("Recentrer")
         }
     }
 }

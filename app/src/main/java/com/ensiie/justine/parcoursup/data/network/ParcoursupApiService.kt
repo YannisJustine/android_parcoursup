@@ -18,8 +18,10 @@ interface ParcoursupApiService {
         @Query("offset") offset: Int = 0
     ): ApiResponse
 
-    @GET("fr-esr-parcoursup/exports/json?select=cod_aff_form,g_olocalisation_des_formations,ville_etab,g_ea_lib_vx&where=session=2024 and g_olocalisation_des_formations IS NOT NULL")
-    suspend fun getFormationsMap(): List<FormationMap>
+    @GET("fr-esr-parcoursup/exports/json?select=cod_aff_form,g_olocalisation_des_formations,ville_etab,g_ea_lib_vx")
+    suspend fun getFormationsMap(
+        @Query("where") where: String,
+    ): List<FormationMap>
     
     @GET("fr-esr-parcoursup/records")
     suspend fun searchFormations(

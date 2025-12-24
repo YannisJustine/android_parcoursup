@@ -52,4 +52,20 @@
     <string name="bac_autre">Autres</string>
     <string name="select_formation">Sélectionner un type de formation</string>
     <string name="contact_information">Contact de l\'établissement</string>
+    <string name="search_radius">Rayon de recherche</string>
+
+    <string name="search_city_placeholder">Rechercher une ville...</string>
+    <string name="cancel">Annuler</string>
+    <string name="validate">Valider</string>
+    <string name="no_formations_found">Aucune formation trouvée.</string>
+    <string name="clear_all">Tout effacer</string>
+    <string name="current_location">Position actuelle</string>
+    <string name="radius_km">Rayon : %1$d km</string>
+    <string name="filter_by_location">Filtrer par localisation</string>
+    <string name="remove_location_filter">Retirer le filtre de localisation</string>
+
+    <string name="filter_by_filiere_count">Filtrer par filière (%1$d)</string>
+    <string name="filter_by_filiere">Filtrer par filière</string>
+    <string name="filter_by_type">Filtrer par type</string>
+    <string name="filter_by_type_count">Filtrer par type (%1$d)</string>
 </resources>

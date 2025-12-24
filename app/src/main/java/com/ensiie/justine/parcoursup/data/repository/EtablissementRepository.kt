@@ -10,7 +10,6 @@ class EtablissementRepository(
     
     suspend fun getEtablissementContactInfo(uai: String): Result<EtablissementContactInfo> {
         return try {
-            // 1. Essayer l'API Enseignement Supérieur
             val responseSup = apiServiceSup.getEtablissementSup(
                 where = "uai='$uai'"
             )
@@ -34,7 +33,6 @@ class EtablissementRepository(
                 )
             }
             
-            // 2. Fallback sur l'API Annuaire de l'Éducation
             val responseEdu = apiServiceEducation.getEtablissementEducation(
                 where = "identifiant_de_l_etablissement='$uai'"
             )

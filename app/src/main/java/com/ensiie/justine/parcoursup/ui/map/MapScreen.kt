@@ -1,27 +1,47 @@
 package com.ensiie.justine.parcoursup.ui.map
 
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import com.ensiie.justine.parcoursup.R
+import com.ensiie.justine.parcoursup.data.model.City
 import com.ensiie.justine.parcoursup.data.model.FormationMap
+import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
+import com.ensiie.justine.parcoursup.ui.filters.LocationFilterCard
+import com.ensiie.justine.parcoursup.ui.filters.LocationSearchModal
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
+import com.ensiie.justine.parcoursup.utils.LocationFilter
+import com.ensiie.justine.parcoursup.utils.LocationHelper
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
@@ -50,11 +70,15 @@ import org.maplibre.spatialk.geojson.FeatureCollection
 import org.maplibre.spatialk.geojson.Point
 import org.maplibre.spatialk.geojson.Position
 import org.maplibre.spatialk.geojson.toJson
+import java.lang.Math.pow
+import kotlin.math.pow
 
 @Composable
 fun MapScreen(
     onNavigateToFormations: (String) -> Unit,
-    viewModel: MapViewModel = koinViewModel()
+    viewModel: MapViewModel = koinViewModel(),
+    adresseRepository: AdresseRepository = koinInject(),
+    locationHelper: LocationHelper = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -69,7 +93,10 @@ fun MapScreen(
         is MapUiState.Success -> {
             MapLibre(
                 formations = state.formations,
-                onMarkerClick = { recordId -> onNavigateToFormations(recordId) }
+                onMarkerClick = { recordId -> onNavigateToFormations(recordId) },
+                viewModel = viewModel,
+                locationHelper = locationHelper,
+                adresseRepository = adresseRepository
             )
         }
 
@@ -90,10 +117,14 @@ fun MapScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapLibre(
     formations: List<FormationMap>,
-    onMarkerClick: (String) -> Unit
+    onMarkerClick: (String) -> Unit,
+    viewModel: MapViewModel,
+    locationHelper: LocationHelper,
+    adresseRepository : AdresseRepository
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -104,114 +135,270 @@ fun MapLibre(
     val cameraState = rememberCameraState(
         CameraPosition(target = Position( centerLon, centerLat), zoom = initialZoom)
     )
+    val locationFilter by viewModel.locationFilter.collectAsState()
+    val filterSheetState = rememberModalBottomSheetState()
+    val locationSheetState = rememberModalBottomSheetState()
+    var showLocationModal by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-    MaplibreMap(
-        baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-        modifier = Modifier.fillMaxSize(),
-        cameraState = cameraState ,
-        styleState = rememberStyleState(),
-        onMapClick = { point, screenPoint ->
-            ClickResult.Pass
-        },
-        options =
-            MapOptions(
-                ornamentOptions = OrnamentOptions.AllDisabled,
-                gestureOptions =
-                    GestureOptions(
-                        isTiltEnabled = true,
-                        isZoomEnabled = true,
-                        isRotateEnabled = true,
-                        isScrollEnabled = true,
-                    ),
-            ),
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        MaplibreMap(
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+            modifier = Modifier.fillMaxSize(),
+            cameraState = cameraState ,
+            styleState = rememberStyleState(),
+            onMapClick = { point, screenPoint ->
+                ClickResult.Pass
+            },
+            options =
+                MapOptions(
+                    ornamentOptions = OrnamentOptions.AllDisabled,
+                    gestureOptions =
+                        GestureOptions(
+                            isTiltEnabled = true,
+                            isZoomEnabled = true,
+                            isRotateEnabled = true,
+                            isScrollEnabled = true,
+                        ),
+                ),
+        ) {
 
-        val features = formations.mapNotNull { f ->
-            val lat = f.etabGps.lat
-            val lon = f.etabGps.lon
-                Feature(
-                    geometry = Point(Position(lon, lat)),
-                    properties = mapOf("id" to JsonPrimitive(f.id)))
+            val features = formations.mapNotNull { f ->
+                val lat = f.etabGps.lat
+                val lon = f.etabGps.lon
+                    Feature(
+                        geometry = Point(Position(lon, lat)),
+                        properties = mapOf("id" to JsonPrimitive(f.id)))
+            }
+
+            val fcJson = FeatureCollection(features).toJson()
+
+            val source = rememberGeoJsonSource(
+                GeoJsonData.JsonString(fcJson),
+                GeoJsonOptions(
+                    cluster = true, 
+                    clusterRadius = 50, 
+                    clusterMaxZoom = 14
+                )
+            )
+
+            CircleLayer(
+                id = "clusters",
+                source = source,
+                filter = feature.has("point_count"),
+                color = step(
+                    input = feature["point_count"].asNumber(),
+                    fallback = const(androidx.compose.ui.graphics.Color(0xFF51BBD6)),
+                    100 to const(androidx.compose.ui.graphics.Color(0xFF1E3A8A)),
+                    750 to const(androidx.compose.ui.graphics.Color(0xFFF28CB1))
+                ),
+
+                radius = step(
+                    input = feature["point_count"].asNumber(),
+                    fallback = const(20.dp),
+                    100 to const(30.dp),
+                    750 to const(40.dp)
+                ),
+                onClick = { feats ->
+                    feats
+                        .firstOrNull { it.properties?.get("point_count") != null }
+                        ?.let { cluster ->
+                            coroutineScope.launch {
+                                val zoomLevel = (cluster.properties?.get("point_count") as? JsonPrimitive)?.content?.toIntOrNull()?.let {
+                                    (cameraState.position.zoom + 2.0).coerceAtMost(20.0)
+                                } ?: (cameraState.position.zoom + 2.0)
+                                cameraState.animateTo(
+                                    cameraState.position.copy(
+                                        target = (cluster.geometry as Point).coordinates,
+                                        zoom = zoomLevel,
+                                    )
+                                )
+                            }
+                            ClickResult.Consume
+                        } ?: ClickResult.Pass
+                }
+            )
+
+           SymbolLayer(
+                id = "cluster-count",
+                source = source,
+                filter = feature.has("point_count"),
+                textField = feature["point_count"].asNumber().formatToString(
+                    minFractionDigits = 0,
+                    maxFractionDigits = 0
+                ),
+                textFont = const(listOf("Noto Sans Regular")),
+                textColor = const(MaterialTheme.colorScheme.onBackground),
+            )
+
+            SymbolLayer(
+                id = "unclustered-marker",
+                source = source,
+                filter = !feature.has("point_count"),
+                iconImage = image(markerIcon),
+                iconAllowOverlap = const(true),
+                iconIgnorePlacement = const(true),
+                iconAnchor = const(SymbolAnchor.Bottom),
+                onClick = { feats ->
+                    feats.firstOrNull()?.let { f ->
+                        val id = (f.properties?.get("id") as? JsonPrimitive)?.content
+                        if (id != null) {
+                            onMarkerClick(id)
+                            return@SymbolLayer ClickResult.Consume
+                        }
+                    }
+                    ClickResult.Pass
+                }
+            )
+
+            if (locationFilter != null) {
+                 val circleRadiusPx = remember(locationFilter, cameraState.position.zoom) {
+                    metersToPixels(
+                        latitude = locationFilter!!.latitude,
+                        radiusMeters = locationFilter!!.radiusKm * 2000.0,
+                        zoom = cameraState.position.zoom
+                    ).toFloat()
+                }
+                
+                val circleFeature = Feature(
+                    geometry = Point(Position(locationFilter!!.longitude, locationFilter!!.latitude)),
+                    properties = mapOf("type" to JsonPrimitive("circle"))
+                )
+                val circleJson = FeatureCollection(listOf(circleFeature)).toJson()
+                val circleSource = rememberGeoJsonSource(
+                    GeoJsonData.JsonString(circleJson)
+                )
+
+                CircleLayer(
+                    id = "location-radius-circle",
+                    source = circleSource,
+                    radius = const(circleRadiusPx.dp),
+                    color = const(DSFRTheme.colors.backgroundActionHigh.copy(alpha = 0.5f)),
+                    strokeColor = const(DSFRTheme.colors.backgroundActionHigh),
+                )
+            }
+
         }
 
-        val fcJson = FeatureCollection(features).toJson()
-
-        val source = rememberGeoJsonSource(
-            GeoJsonData.JsonString(fcJson),
-            GeoJsonOptions(
-                cluster = true, 
-                clusterRadius = 50, 
-                clusterMaxZoom = 14
-            )
+        LocationFilterCard(
+            locationFilter = locationFilter,
+            onClick = { showLocationModal = true },
+            onClear = { viewModel.clearLocationFilter() },
+            modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
         )
 
-        CircleLayer(
-            id = "clusters",
-            source = source,
-            filter = feature.has("point_count"),
-            color = step(
-                input = feature["point_count"].asNumber(),
-                fallback = const(androidx.compose.ui.graphics.Color(0xFF51BBD6)),
-                100 to const(androidx.compose.ui.graphics.Color(0xFF1E3A8A)),
-                750 to const(androidx.compose.ui.graphics.Color(0xFFF28CB1))
-            ),
+        if (showLocationModal) {
+            var isLoadingLocation by remember { mutableStateOf(false) }
+            var locationError by remember { mutableStateOf<String?>(null) }
 
-            radius = step(
-                input = feature["point_count"].asNumber(),
-                fallback = const(20.dp),
-                100 to const(30.dp),
-                750 to const(40.dp)
-            ),
-            onClick = { feats ->
-                feats
-                    .firstOrNull { it.properties?.get("point_count") != null }
-                    ?.let { cluster ->
-                        coroutineScope.launch {
-                            val zoomLevel = (cluster.properties?.get("point_count") as? JsonPrimitive)?.content?.toIntOrNull()?.let {
-                                (cameraState.position.zoom + 2.0).coerceAtMost(20.0)
-                            } ?: (cameraState.position.zoom + 2.0)
-                            cameraState.animateTo(
-                                cameraState.position.copy(
-                                    target = (cluster.geometry as Point).coordinates,
-                                    zoom = zoomLevel,
+            val locationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) { permissions ->
+                val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+                val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+                if (fineLocationGranted || coarseLocationGranted) {
+                    isLoadingLocation = true
+                    locationError = null
+
+                    locationHelper.getCurrentLocation(
+                        onGetCurrentLocationSuccess = { (latitude, longitude) ->
+                            viewModel.setLocationFilter(
+                                LocationFilter(
+                                    latitude = latitude,
+                                    longitude = longitude,
+                                    radiusKm = 10,
+                                    cityName = null
                                 )
                             )
+                            showLocationModal = false
+                            isLoadingLocation = false
+                        },
+                        onGetCurrentLocationFailed = { exception ->
+                            isLoadingLocation = false
+                            locationError = exception.message ?: "Erreur lors de la récupération de votre position"
                         }
-                        ClickResult.Consume
-                    } ?: ClickResult.Pass
-            }
-        )
-
-        org.maplibre.compose.layers.SymbolLayer(
-            id = "cluster-count",
-            source = source,
-            filter = feature.has("point_count"),
-            textField = feature["point_count"].asNumber().formatToString(
-                minFractionDigits = 0,
-                maxFractionDigits = 0
-            ),
-            textFont = const(listOf("Noto Sans Regular")),
-            textColor = const(MaterialTheme.colorScheme.onBackground),
-        )
-
-        SymbolLayer(
-            id = "unclustered-marker",
-            source = source,
-            filter = !feature.has("point_count"),
-            iconImage = image(markerIcon),
-            iconAllowOverlap = const(true),
-            iconIgnorePlacement = const(true),
-            iconAnchor = const(SymbolAnchor.Bottom),
-            onClick = { feats ->
-                feats.firstOrNull()?.let { f ->
-                    val id = (f.properties?.get("id") as? JsonPrimitive)?.content
-                    if (id != null) {
-                        onMarkerClick(id)
-                        return@SymbolLayer ClickResult.Consume
-                    }
+                    )
+                } else {
+                    val intent = android.content.Intent(
+                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.fromParts("package", context.packageName, null)
+                    )
+                    context.startActivity(intent)
                 }
-                ClickResult.Pass
             }
-        )
+
+            LocationSearchModal(
+                locationSheetState = locationSheetState,
+                onDismiss = {
+                    showLocationModal = false
+                    locationError = null
+                },
+                onLocationSelected = { selectedCity, radius ->
+                    viewModel.setLocationFilter(
+                        LocationFilter(
+                            latitude = selectedCity.latitude,
+                            longitude = selectedCity.longitude,
+                            radiusKm = radius,
+                            cityName = selectedCity.name
+                        )
+                    )
+                    showLocationModal = false
+                },
+                onUseCurrentLocation = { radius ->
+                    if (locationHelper.areLocationPermissionsGranted()) {
+                        isLoadingLocation = true
+                        locationError = null
+                        locationHelper.getCurrentLocation(
+                            onGetCurrentLocationSuccess = { (latitude, longitude) ->
+                                viewModel.setLocationFilter(
+                                    LocationFilter(
+                                        latitude = latitude,
+                                        longitude = longitude,
+                                        radiusKm = radius,
+                                        cityName = null
+                                    )
+                                )
+                                showLocationModal = false
+                                isLoadingLocation = false
+                            },
+                            onGetCurrentLocationFailed = { exception ->
+                                isLoadingLocation = false
+                                locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                            }
+                        )
+                    } else {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                },
+                searchCities = { query -> adresseRepository.searchCities(query) },
+                isLoadingLocation = isLoadingLocation,
+                locationError = locationError,
+                initialRadius = locationFilter?.radiusKm ?: 10,
+                initialCity = locationFilter?.let {
+                    if (it.cityName != null) {
+                        City(
+                            name = it.cityName,
+                            fullLabel = it.cityName,
+                            longitude = it.longitude,
+                            latitude = it.latitude,
+                            context = ""
+                        )
+                    } else null
+                }
+            )
+        }
     }
+}
+
+private fun metersToPixels(latitude: Double, radiusMeters: Double, zoom: Double): Double {
+    val earthCircumference = 40075016.686
+    val latitudeRad = Math.toRadians(latitude)
+    val metersPerPixel = earthCircumference * (kotlin.math.cos(latitudeRad) / 2.0.pow(zoom + 8.0))
+    return radiusMeters / metersPerPixel
 }

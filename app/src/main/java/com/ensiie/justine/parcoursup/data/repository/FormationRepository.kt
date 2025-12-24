@@ -6,6 +6,7 @@ import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationMap
 import com.ensiie.justine.parcoursup.data.model.FormationStats
 import com.ensiie.justine.parcoursup.data.network.ParcoursupApiService
+import com.ensiie.justine.parcoursup.utils.LocationFilter
 import kotlinx.coroutines.flow.Flow
 
 class FormationRepository(
@@ -52,8 +53,19 @@ class FormationRepository(
         Result.failure(e)
     }
     
-    suspend fun getAllFormationsForMap(): Result<List<FormationMap>> = try {
-        val response = apiService.getFormationsMap()
+    suspend fun getFormationsForMap(
+        location: LocationFilter? = null,
+    ): Result<List<FormationMap>> = try {
+        val whereConditions = mutableListOf("session=2024 and g_olocalisation_des_formations IS NOT NULL")
+        
+        location?.let {
+            val radiusMeters = it.radiusKm * 1000
+            whereConditions.add("within_distance(g_olocalisation_des_formations, geom'POINT(${it.longitude} ${it.latitude})', ${radiusMeters}m)")
+        }
+        
+        val whereClause = whereConditions.joinToString(" AND ")
+        val response = apiService.getFormationsMap(where = whereClause)
+        
         Result.success(response)
     } catch (e: Exception) {
         Result.failure(e)

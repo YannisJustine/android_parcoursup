@@ -53,6 +53,8 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrFilterChip
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrIconButton
 import androidx.compose.material3.Icon
 import androidx.room.util.copy
+import com.ensiie.justine.parcoursup.ui.filters.LocationFilterCard
+import com.ensiie.justine.parcoursup.ui.filters.LocationSearchModal
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButtonType
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTag
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagSize
@@ -173,7 +175,7 @@ fun FormationsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             DsfrText(
-                                text = "Aucune formation trouvée.",
+                                text = stringResource(R.string.no_formations_found),
                                 textStyle = DsfrTextStyle.BodyMd,
                                 color = DsfrTextColor.Label
                             )
@@ -366,7 +368,6 @@ fun FormationsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBar(
     query: String,
@@ -498,7 +499,7 @@ fun FilterTagsRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                 ) {
-                DsfrText("Filtrer par filière", textStyle = DsfrTextStyle.BodySm)
+                DsfrText(stringResource(R.string.filter_by_filiere), textStyle = DsfrTextStyle.BodySm)
                 Icon(
                     painter = painterResource(id = R.drawable.add_circle_24dp),
                     contentDescription = null,
@@ -506,7 +507,7 @@ fun FilterTagsRow(
                 )
                 }
             } else {
-                DsfrText("Filtrer par filière ($selectedFilieresCount)", textStyle = DsfrTextStyle.BodySm)
+                DsfrText(stringResource(R.string.filter_by_filiere_count, selectedFilieresCount), textStyle = DsfrTextStyle.BodySm)
             }
             }
         )
@@ -520,7 +521,7 @@ fun FilterTagsRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                 ) {
-                DsfrText("Filtrer par type", textStyle = DsfrTextStyle.BodySm)
+                DsfrText(stringResource(R.string.filter_by_type), textStyle = DsfrTextStyle.BodySm)
                 Icon(
                     painter = painterResource(id = R.drawable.add_circle_24dp),
                     contentDescription = null,
@@ -528,7 +529,7 @@ fun FilterTagsRow(
                 )
                 }
             } else {
-                DsfrText("Filtrer par type ($selectedContratsCount)", textStyle = DsfrTextStyle.BodySm)
+                DsfrText(stringResource(R.string.filter_by_type_count, selectedContratsCount), textStyle = DsfrTextStyle.BodySm)
             }
             }
         )
@@ -579,7 +580,7 @@ fun FilterModalBottomSheet(
                     
                     if (tempSelectedOptions.isNotEmpty()) {
                         DsfrTextButton(onClick = { tempSelectedOptions = emptySet() }) {
-                            Text("Tout effacer")
+                            Text(stringResource(R.string.clear_all))
                         }
                     }
                 }
@@ -592,12 +593,13 @@ fun FilterModalBottomSheet(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { 
-                                    tempSelectedOptions = if (tempSelectedOptions.contains(option)) {
-                                        tempSelectedOptions - option
-                                    } else {
-                                        tempSelectedOptions + option
-                                    }
+                                .clickable {
+                                    tempSelectedOptions =
+                                        if (tempSelectedOptions.contains(option)) {
+                                            tempSelectedOptions - option
+                                        } else {
+                                            tempSelectedOptions + option
+                                        }
                                 }
                                 .padding(vertical = DSFRTheme.spacing.xs),
                             verticalAlignment = Alignment.CenterVertically
@@ -636,7 +638,7 @@ fun FilterModalBottomSheet(
                     modifier = Modifier.padding(end = DSFRTheme.spacing.sm),
                     type = DsfrButtonType.Secondary
                 ) {
-                    Text("Annuler")
+                    Text(stringResource(R.string.cancel))
                 }
                 DsfrButton(
                     onClick = {
@@ -653,7 +655,7 @@ fun FilterModalBottomSheet(
                         onDismissRequest()
                     }
                 ) {
-                    Text("Valider")
+                    Text(stringResource(R.string.validate))
                 }
             }
         }
@@ -663,272 +665,4 @@ fun FilterModalBottomSheet(
 enum class FilterType {
     FILIERE,
     CONTRAT
-}
-
-@Composable
-fun LocationFilterCard(
-    locationFilter: LocationFilter?,
-    onClick: () -> Unit,
-    onClear: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    DsfrCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = if (locationFilter != null) DSFRTheme.colors.actionHigh else DSFRTheme.colors.textDefault,
-                    modifier = Modifier.size(20.dp)
-                )
-                if (locationFilter != null) {
-                    Column {
-                        DsfrText(
-                            text = locationFilter.cityName ?: "Position actuelle",
-                            textStyle = DsfrTextStyle.BodyMd,
-                            fontWeight = FontWeight.Bold
-                        )
-                        DsfrText(
-                            text = "Rayon : ${locationFilter.radiusKm} km",
-                            textStyle = DsfrTextStyle.BodySm,
-                            color = DsfrTextColor.Mention
-                        )
-                    }
-                } else {
-                    DsfrText(
-                        text = "Filtrer par localisation",
-                        textStyle = DsfrTextStyle.BodyMd
-                    )
-                }
-            }
-            if (locationFilter != null) {
-                IconButton(onClick = onClear) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Retirer le filtre de localisation",
-                        tint = DSFRTheme.colors.textDefault,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.add_circle_24dp),
-                    contentDescription = null,
-                    tint = DSFRTheme.colors.actionHigh,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LocationSearchModal(
-    onDismiss: () -> Unit,
-    locationSheetState: SheetState,
-    onLocationSelected: (City, Int) -> Unit,
-    onUseCurrentLocation: (Int) -> Unit,
-    searchCities: suspend (String) -> Result<List<City>>,
-    isLoadingLocation: Boolean,
-    locationError: String? = null,
-    initialRadius: Int = 10,
-    initialCity: City? = null
-) {
-    var searchQuery by remember { mutableStateOf(initialCity?.name ?: "") }
-    var cities by remember { mutableStateOf<List<City>>(emptyList()) }
-    var selectedRadius by remember { mutableStateOf(initialRadius) }
-    var isSearching by remember { mutableStateOf(false) }
-    var selectedCity by remember { mutableStateOf<City?>(initialCity) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(searchQuery) {
-        if (searchQuery.length >= 2) {
-            isSearching = true
-            kotlinx.coroutines.delay(400)
-            if (searchQuery.length >= 2) {
-                searchCities(searchQuery)
-                    .onSuccess { cities = it }
-                    .onFailure { cities = emptyList() }
-            }
-            isSearching = false
-        } else {
-            cities = emptyList()
-        }
-    }
-
-    ModalBottomSheet(
-        sheetState = locationSheetState,
-        onDismissRequest = onDismiss,
-        containerColor = DSFRTheme.colors.backgroundDefault,
-        modifier = Modifier.fillMaxWidth()
-) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(DSFRTheme.spacing.md)
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.7f),
-                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
-            ) {
-                DsfrText(
-                    text = "Rechercher par localisation",
-                    textStyle = DsfrTextStyle.HeadingMd
-                )
-
-                DsfrButton(
-                    onClick = { onUseCurrentLocation(selectedRadius) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoadingLocation
-                ) {
-                    if (isLoadingLocation) {
-                        DsfrCircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.MyLocation,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
-                    DsfrText("Utiliser ma position")
-                }
-
-                if (locationError != null) {
-                    DsfrCard(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = null,
-                                tint = DSFRTheme.colors.error,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            DsfrText(
-                                text = locationError,
-                                textStyle = DsfrTextStyle.BodySm,
-                                color = DsfrTextColor.Error
-                            )
-                        }
-                    }
-                }
-
-                DsfrTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Rechercher une ville...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                DsfrText(
-                    text = "Rayon de recherche",
-                    textStyle = DsfrTextStyle.BodyMd,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
-                ) {
-                    listOf(5, 10, 25, 50, 100).forEach { radius ->
-                        DsfrFilterChip(
-                            selected = selectedRadius == radius,
-                            onClick = { selectedRadius = radius },
-                            label = { DsfrText("$radius km", textStyle = DsfrTextStyle.BodySm) },
-                        )
-                    }
-                }
-
-                if (isSearching) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(DSFRTheme.spacing.md),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DsfrCircularProgressIndicator()
-                    }
-                } else if (cities.isNotEmpty()) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
-                        state = rememberLazyListState()
-                    ) {
-                        items(cities) { city ->
-                            DsfrCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selectedCity = city
-                                    }
-                                    .then(if (selectedCity == city) Modifier.border(2.dp, DSFRTheme.colors.actionHigh) else Modifier),
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    DsfrText(
-                                        text = city.name,
-                                        textStyle = DsfrTextStyle.BodyMd,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    DsfrText(
-                                        text = city.context,
-                                        textStyle = DsfrTextStyle.BodySm,
-                                        color = DsfrTextColor.Mention
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = DSFRTheme.spacing.md),
-                horizontalArrangement = Arrangement.End
-            ) {
-                DsfrButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.padding(end = DSFRTheme.spacing.sm),
-                    type = DsfrButtonType.Secondary
-                ) {
-                    Text("Annuler")
-                }
-                DsfrButton(
-                    onClick = {
-                        if (selectedCity != null) {
-                            onLocationSelected(selectedCity!!, selectedRadius)
-                        }
-                    },
-                    enabled = selectedCity != null
-                ) {
-                    Text("Valider")
-                }
-            }
-        }
-    }
 }

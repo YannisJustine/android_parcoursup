@@ -26,7 +26,7 @@ class FormationRepository(
         val whereConditions = mutableListOf("session=2024")
         
         name?.takeIf { it.isNotBlank() }?.let { 
-            whereConditions.add("g_ea_lib_vx LIKE \"$it\"")
+            whereConditions.add("search(g_ea_lib_vx,\"%$it%\")")
         }
         
         if (filieres.isNotEmpty()) {

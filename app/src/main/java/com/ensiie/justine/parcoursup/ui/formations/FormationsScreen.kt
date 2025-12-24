@@ -97,14 +97,14 @@ fun FormationsScreen(
             onQueryChange = viewModel::searchFormations,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = DSFRTheme.spacing.md, vertical = DSFRTheme.spacing.sm)
         )
 
         LocationFilterCard(
             locationFilter = locationFilter,
             onClick = { showLocationModal = true },
             onClear = { viewModel.clearLocationFilter() },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
         )
 
         FilterTagsRow(
@@ -114,7 +114,7 @@ fun FormationsScreen(
             onContratClick = { filterType = FilterType.CONTRAT },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = DSFRTheme.spacing.md, vertical = DSFRTheme.spacing.sm)
         )
 
         when (val state = uiState) {
@@ -181,8 +181,8 @@ fun FormationsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(DSFRTheme.spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
                             state = listState
                         ) {
                             items(state.formations, key = { it.id }) { formation ->
@@ -200,7 +200,7 @@ fun FormationsScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(16.dp),
+                                            .padding(DSFRTheme.spacing.md),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         DsfrCircularProgressIndicator()
@@ -373,9 +373,18 @@ fun SearchBar(
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var text by remember { mutableStateOf(query) }
+
+    LaunchedEffect(text) {
+        if (text != query) {
+            kotlinx.coroutines.delay(400)
+            onQueryChange(text)
+        }
+    }
+
     DsfrTextField(
-        value = query,
-        onValueChange = onQueryChange,
+        value = text,
+        onValueChange = { text = it },
         placeholder = { Text("Rechercher une formation...") },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         singleLine = true,
@@ -399,7 +408,7 @@ fun FormationCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(DSFRTheme.spacing.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -422,10 +431,10 @@ fun FormationCard(
                     color = DsfrTextColor.Label
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(DSFRTheme.spacing.sm))
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
                 ) {
                     formation.capacite?.let {
                         DsfrTag(
@@ -471,7 +480,7 @@ fun FilterTagsRow(
 ) {
     Row(
         modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
     ) {
         DsfrText(
             text = "Filtrer par :",
@@ -487,13 +496,13 @@ fun FilterTagsRow(
             if (selectedFilieresCount == 0) {
                 Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                 ) {
                 DsfrText("Filtrer par filière", textStyle = DsfrTextStyle.BodySm)
                 Icon(
                     painter = painterResource(id = R.drawable.add_circle_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(DSFRTheme.spacing.md)
                 )
                 }
             } else {
@@ -509,13 +518,13 @@ fun FilterTagsRow(
             if (selectedContratsCount == 0) {
                 Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                 ) {
                 DsfrText("Filtrer par type", textStyle = DsfrTextStyle.BodySm)
                 Icon(
                     painter = painterResource(id = R.drawable.add_circle_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(DSFRTheme.spacing.md)
                 )
                 }
             } else {
@@ -549,7 +558,7 @@ fun FilterModalBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(DSFRTheme.spacing.md)
         ) {
             Column(
                 modifier = Modifier
@@ -559,7 +568,7 @@ fun FilterModalBottomSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                        .padding(bottom = DSFRTheme.spacing.md),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -577,7 +586,7 @@ fun FilterModalBottomSheet(
 
                 LazyColumn(
                     modifier = Modifier.weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                 ) {
                     items(options) { option ->
                         Row(
@@ -619,12 +628,12 @@ fun FilterModalBottomSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .padding(top = DSFRTheme.spacing.md),
                 horizontalArrangement = Arrangement.End
             ) {
                 DsfrButton(
                     onClick = onDismissRequest,
-                    modifier = Modifier.padding(end = 8.dp),
+                    modifier = Modifier.padding(end = DSFRTheme.spacing.sm),
                     type = DsfrButtonType.Secondary
                 ) {
                     Text("Annuler")
@@ -676,7 +685,7 @@ fun LocationFilterCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
@@ -771,13 +780,13 @@ fun LocationSearchModal(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(DSFRTheme.spacing.md)
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.7f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
             ) {
                 DsfrText(
                     text = "Rechercher par localisation",
@@ -800,7 +809,7 @@ fun LocationSearchModal(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
                     DsfrText("Utiliser ma position")
                 }
 
@@ -810,7 +819,7 @@ fun LocationSearchModal(
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -845,7 +854,7 @@ fun LocationSearchModal(
 
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                 ) {
                     listOf(5, 10, 25, 50, 100).forEach { radius ->
                         DsfrFilterChip(
@@ -858,7 +867,7 @@ fun LocationSearchModal(
 
                 if (isSearching) {
                     Box(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(DSFRTheme.spacing.md),
                         contentAlignment = Alignment.Center
                     ) {
                         DsfrCircularProgressIndicator()
@@ -866,7 +875,7 @@ fun LocationSearchModal(
                 } else if (cities.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
                         state = rememberLazyListState()
                     ) {
                         items(cities) { city ->
@@ -899,12 +908,12 @@ fun LocationSearchModal(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .padding(top = DSFRTheme.spacing.md),
                 horizontalArrangement = Arrangement.End
             ) {
                 DsfrButton(
                     onClick = onDismiss,
-                    modifier = Modifier.padding(end = 8.dp),
+                    modifier = Modifier.padding(end = DSFRTheme.spacing.sm),
                     type = DsfrButtonType.Secondary
                 ) {
                     Text("Annuler")

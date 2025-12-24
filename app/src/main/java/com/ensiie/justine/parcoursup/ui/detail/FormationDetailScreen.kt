@@ -1,8 +1,13 @@
 package com.ensiie.justine.parcoursup.ui.detail
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.em
 import org.maplibre.compose.expressions.dsl.image
@@ -163,7 +170,7 @@ fun FormationDetailScreen(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
                     ) {
                         DsfrText(
                             text = state.message,
@@ -195,15 +202,15 @@ fun FormationDetailContent(
                 enabled = isScrollEnabled,
                 state = rememberScrollState()
             )
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(DSFRTheme.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md),
     ) {
         DsfrCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(DSFRTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
             ) {
                 DsfrText(
                     text = formation.etablissement
@@ -222,11 +229,58 @@ fun FormationDetailContent(
                     color = DsfrTextColor.Label
                 )
 
-                DsfrTag(
-                    text = formation.filiereString ?: "",
-                    type = DsfrTagType.Primary,
-                    size = DsfrTagSize.Small
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DsfrTag(
+                        text = formation.filiereString ?: "",
+                        type = DsfrTagType.Primary,
+                        size = DsfrTagSize.Small
+                    )
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
+                    ) {
+                        if (!etablissementInfo.telephone.isNullOrEmpty()) {
+                            ContactButton(
+                                icon = painterResource(R.drawable.ic_phone),
+                                contentDescription = "Téléphone",
+                                value = etablissementInfo.telephone,
+                                onClickAction = {
+                                    val intent = Intent(Intent.ACTION_DIAL, "tel:${etablissementInfo.telephone}".toUri())
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
+                    
+                    if (!etablissementInfo.mail.isNullOrEmpty()) {
+                        ContactButton(
+                            icon = painterResource(R.drawable.ic_mail),
+                            contentDescription = "Email",
+                            value = etablissementInfo.mail,
+                            onClickAction = {
+                                val intent = Intent(Intent.ACTION_SENDTO, "mailto:${etablissementInfo.mail}".toUri())
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                    
+                    if (!etablissementInfo.siteWeb.isNullOrEmpty()) {
+                        ContactButton(
+                            icon = painterResource(R.drawable.ic_web),
+                            contentDescription = "Site Web",
+                            value = etablissementInfo.siteWeb,
+                            onClickAction = {
+                                val intent = Intent(Intent.ACTION_VIEW, etablissementInfo.siteWeb.toUri())
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                    }
+                }
             }
         }
 
@@ -237,7 +291,7 @@ fun FormationDetailContent(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
         ) {
             StatCard(
                 title = stringResource(R.string.capacity),
@@ -253,7 +307,7 @@ fun FormationDetailContent(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
         ) {
             StatCard(
                 title = stringResource(R.string.admitted),
@@ -315,8 +369,8 @@ fun FormationDetailContent(
                 when (page) {
                     0 -> {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(DSFRTheme.spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                         ) {
                             ProgressRow(
                                 label = stringResource(R.string.women),
@@ -332,8 +386,8 @@ fun FormationDetailContent(
                     }
                     1 -> {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(DSFRTheme.spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                         ) {
                             ProgressRow(
                                 label = stringResource(R.string.bac_general),
@@ -350,16 +404,11 @@ fun FormationDetailContent(
                                 percentage = formation.pctBacPro ?: 0.0,
                                 count = formation.accBacPro ?: 0
                             )
-                            ProgressRow(
-                                label = stringResource(R.string.bac_autre),
-                                percentage = 100 - (formation.pctBacPro ?: 0.0) - (formation.pctBacTech ?: 0.0) - (formation.pctBacGeneral ?: 0.0),
-                                count = 100 - (formation.accBacPro ?: 0) - (formation.accBacGeneral ?: 0) - (formation.accBacTech ?: 0)
-                            )
                         }
                     }
                     2 -> {
                         Column(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.padding(DSFRTheme.spacing.md),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             MentionRow(stringResource(R.string.mention_none), formation.mentionSans ?: 0)
@@ -403,18 +452,6 @@ fun FormationDetailContent(
             }
         }
 
-        if(etablissementInfo.nom.isNotEmpty()) {
-            DsfrText(
-                text = stringResource(R.string.contact_information),
-                textStyle = DsfrTextStyle.HeadingMd
-            )
-            DsfrCard(modifier = Modifier.fillMaxWidth()) {
-                EtablissementContactContent(
-                    contactInfo = etablissementInfo,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
     }
 }
 
@@ -426,7 +463,7 @@ fun StatCard(
 ) {
     DsfrCard(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(DSFRTheme.spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             DsfrText(
@@ -571,94 +608,36 @@ fun FormationMap(
 }
 
 @Composable
-fun EtablissementContactContent(
-    contactInfo: EtablissementContactInfo,
-    modifier: Modifier = Modifier
+fun ContactButton(
+    icon: Painter,
+    contentDescription: String,
+    value: String,
+    onClickAction: () -> Unit
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    val context = LocalContext.current
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    
+    Box(
+        modifier = Modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onClickAction() },
+                    onLongPress = {
+                        val clip = ClipData.newPlainText(contentDescription, value)
+                        clipboardManager.setPrimaryClip(clip)
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
+                            Toast.makeText(context, "$contentDescription copié", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+            .size(DSFRTheme.spacing.md),
+        contentAlignment = Alignment.Center
     ) {
-        DsfrText(
-            text = contactInfo.nom,
-            textStyle = DsfrTextStyle.HeadingMd
+        Icon(
+            painter = icon,
+            contentDescription = contentDescription,
+            tint = DSFRTheme.colors.actionHigh,
+            modifier = Modifier.size(24.dp)
         )
-        if (!contactInfo.adresse.isNullOrEmpty()) {
-            DsfrText(
-                text = contactInfo.adresse,
-                textStyle = DsfrTextStyle.BodyMd
-            )
-        }
-        if (!contactInfo.codePostal.isNullOrEmpty() && !contactInfo.commune.isNullOrEmpty()) {
-            DsfrText(
-                text = "${contactInfo.codePostal} ${contactInfo.commune}",
-                textStyle = DsfrTextStyle.BodyMd
-            )
-        }
-        if (!contactInfo.telephone.isNullOrEmpty()) {
-            val context = LocalContext.current
-            Row {
-                DsfrText(
-                    text = "Tel: ",
-                    textStyle = DsfrTextStyle.BodyMd
-                )
-                DsfrText(
-                    text = contactInfo.telephone,
-                    textStyle = DsfrTextStyle.BodyMd,
-                    color = DsfrTextColor.Info,
-                    modifier = Modifier
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                        val intent = Intent(Intent.ACTION_DIAL,
-                            "tel:${contactInfo.telephone}".toUri())
-                        context.startActivity(intent)
-                        }
-                    }
-                )
-            }
-        }
-        if (!contactInfo.mail.isNullOrEmpty()) {
-            val context = LocalContext.current
-            Row {
-                DsfrText(
-                    text = "Email: ",
-                    textStyle = DsfrTextStyle.BodyMd
-                )
-                DsfrText(
-                    text = contactInfo.mail,
-                    textStyle = DsfrTextStyle.BodyMd,
-                    color = DsfrTextColor.Info,
-                    modifier = Modifier
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                        val intent = Intent(Intent.ACTION_SENDTO,
-                            "mailto:${contactInfo.mail}".toUri())
-                        context.startActivity(intent)
-                        }
-                    }
-                )
-            }
-        }
-        if (!contactInfo.siteWeb.isNullOrEmpty()) {
-            val context = LocalContext.current
-            Row {
-                DsfrText(
-                    text = "Site Web: ",
-                    textStyle = DsfrTextStyle.BodyMd
-                )
-                DsfrText(
-                    text = contactInfo.siteWeb,
-                    textStyle = DsfrTextStyle.BodyMd,
-                    color = DsfrTextColor.Info,
-                    modifier = Modifier
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                        val intent = Intent(Intent.ACTION_VIEW, contactInfo.siteWeb.toUri())
-                        context.startActivity(intent)
-                        }
-                    }
-                )
-            }
-        }
     }
 }

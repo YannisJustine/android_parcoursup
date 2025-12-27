@@ -5,19 +5,12 @@
     <string name="nav_formations">Formations</string>
     <string name="nav_favorites">Favoris</string>
     <string name="nav_map">Carte</string>
-    
-    <string name="search_hint">Rechercher une formation…</string>
-    <string name="all_filieres">Toutes les filières</string>
-    <string name="close">Fermer</string>
+
     <string name="select_filiere">Sélectionner une filière</string>
-    
+
+
     <string name="stats_2024">Statistiques 2024</string>
-    <string name="stats_establishments">Établissements</string>
-    <string name="stats_avg_capacity">Capacité moy.</string>
-    <string name="stats_avg_access_rate">Taux accès moy.</string>
-    <string name="stats_avg_grade">Moyenne bac</string>
-    <string name="average_bac">Moyenne bac</string>
-    
+
     <string name="capacity">Capacité</string>
     <string name="wishes">Vœux</string>
     <string name="admitted">Admis</string>
@@ -50,19 +43,29 @@
     <string name="location">Localisation</string>
     <string name="details">Détails</string>
 
-    <string name="error_loading_data">Erreur de chargement des données</string>
     <string name="back">Retour</string>
     <string name="retry">Réessayer</string>
-    
-    <string name="loading">Chargement…</string>
-    <string name="error_unknown">Erreur inconnue</string>
-    <string name="error_search">Erreur de recherche</string>
-    <string name="error_formation_not_found">Formation non trouvée</string>
-    <string name="error_loading">Erreur de chargement</string>
-    <string name="error_map_loading">Erreur de chargement de la carte</string>
-    
+
     <string name="establishment_unknown">Établissement inconnu</string>
     <string name="formation">Formation</string>
     <string name="not_available">N/A</string>
     <string name="bac_autre">Autres</string>
+    <string name="select_formation">Sélectionner un type de formation</string>
+    <string name="contact_information">Contact de l\'établissement</string>
+    <string name="search_radius">Rayon de recherche</string>
+
+    <string name="search_city_placeholder">Rechercher une ville...</string>
+    <string name="cancel">Annuler</string>
+    <string name="validate">Valider</string>
+    <string name="no_formations_found">Aucune formation trouvée.</string>
+    <string name="clear_all">Tout effacer</string>
+    <string name="current_location">Position actuelle</string>
+    <string name="radius_km">Rayon : %1$d km</string>
+    <string name="filter_by_location">Filtrer par localisation</string>
+    <string name="remove_location_filter">Retirer le filtre de localisation</string>
+
+    <string name="filter_by_filiere_count">Filtrer par filière (%1$d)</string>
+    <string name="filter_by_filiere">Filtrer par filière</string>
+    <string name="filter_by_type">Filtrer par type</string>
+    <string name="filter_by_type_count">Filtrer par type (%1$d)</string>
 </resources>

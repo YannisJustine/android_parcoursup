@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 class FavoritesViewModel(
     private val repository: FormationRepository
 ) : ViewModel() {
-    
+
     val uiState: StateFlow<FavoritesUiState> = repository.getAllFavorites()
         .map<List<FavoriteFormation>, FavoritesUiState> { favorites ->
             if (favorites.isEmpty()) {
@@ -27,7 +27,7 @@ class FavoritesViewModel(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = FavoritesUiState.Loading
         )
-    
+
     fun removeFavorite(id: String) {
         viewModelScope.launch {
             repository.removeFavorite(id)

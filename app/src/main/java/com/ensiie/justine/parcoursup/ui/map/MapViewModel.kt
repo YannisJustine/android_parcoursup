@@ -3,30 +3,53 @@ package com.ensiie.justine.parcoursup.ui.map
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationMap
+import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
+import com.ensiie.justine.parcoursup.ui.filters.SharedFilterViewModel
+import com.ensiie.justine.parcoursup.utils.LocationFilter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MapViewModel(
-    private val repository: FormationRepository
+    private val repository: FormationRepository,
+    private val adresseRepository: AdresseRepository,
+    private val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
-    
+
+    // Use shared filter state from SharedFilterViewModel
+    val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
+
+    // Track clicked formations at location (persists across navigation)
+    private val _clickedFormations = MutableStateFlow<List<FormationMap>?>(null)
+    val clickedFormations: StateFlow<List<FormationMap>?> = _clickedFormations.asStateFlow()
+
     init {
-        loadFormationsForMap()
+        observeFilterChanges()
     }
-    
-    private fun loadFormationsForMap() {
+
+    /**
+     * Observe changes in shared filter state and reload map data accordingly
+     */
+    private fun observeFilterChanges() {
+        viewModelScope.launch {
+            // Collect and reload data whenever filter state changes
+            sharedFilterViewModel.locationFilter.collect { location ->
+                loadFormationsForMap(location)
+            }
+        }
+    }
+
+    private fun loadFormationsForMap(location: LocationFilter? = null) {
         viewModelScope.launch {
             _uiState.value = MapUiState.Loading
-            
-            repository.getAllFormationsForMap()
+
+            repository.getFormationsForMap(location = location)
                 .onSuccess { formations ->
                     Log.d("MapViewModel", "Formations count: ${formations.size}")
                     _uiState.value = MapUiState.Success(formations)
@@ -38,10 +61,23 @@ class MapViewModel(
                 }
         }
     }
-    
+
     fun retry() {
-        loadFormationsForMap()
+        loadFormationsForMap(locationFilter.value)
     }
+
+    fun setLocationFilter(filter: LocationFilter) {
+        sharedFilterViewModel.setLocationFilter(filter)
+    }
+
+    fun clearLocationFilter() {
+        sharedFilterViewModel.clearLocationFilter()
+    }
+
+    fun setClickedFormations(formations: List<FormationMap>?) {
+        _clickedFormations.value = formations
+    }
+
 }
 
 sealed interface MapUiState {

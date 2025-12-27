@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.appcompat:appcompat:1.3.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -56,7 +57,10 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.ui)
-    
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.play.services.location)
+
     // Koin Testing
     testImplementation(libs.koin.test)
     androidTestImplementation(libs.koin.android.test)
@@ -88,7 +92,11 @@ dependencies {
 
     // Open Street Map
     implementation(libs.maplibre.compose)
-    
+
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -2,14 +2,25 @@ package com.ensiie.justine.parcoursup.ui.detail
 
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.widget.Toast
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,38 +28,50 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.core.net.toUri
+import com.ensiie.justine.parcoursup.R
+import com.ensiie.justine.parcoursup.data.model.EtablissementContactInfo
+import com.ensiie.justine.parcoursup.data.model.Formation
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButton
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrLinearProgressIndicator
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTag
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagSize
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTagType
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import com.ensiie.justine.parcoursup.R
-import com.ensiie.justine.parcoursup.data.model.Formation
-import kotlinx.serialization.json.JsonPrimitive
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.asString
@@ -79,79 +102,85 @@ import org.maplibre.spatialk.geojson.toJson
 fun FormationDetailScreen(
     id: String,
     onNavigateBack: () -> Unit,
-    viewModel: FormationDetailViewModel = koinViewModel { parametersOf(id) }
+    viewModel: FormationDetailViewModel = koinViewModel(key = id) { parametersOf(id) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState(initial = false)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.details)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = DSFRTheme.colors.backgroundRaised,
+                titleContentColor = DSFRTheme.colors.textDefault,
+                navigationIconContentColor = DSFRTheme.colors.textDefault,
+                actionIconContentColor = DSFRTheme.colors.textDefault
+            ),
+            windowInsets = WindowInsets(0.dp),
+            title = {
+                DsfrText(
+                    stringResource(R.string.details),
+                    textStyle = DsfrTextStyle.HeadingLg
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
+            },
+            actions = {
+                if (uiState is DetailUiState.Success) {
+                    IconButton(onClick = { viewModel.toggleFavorite() }) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            imageVector = if (isFavorite) Icons.Filled.Favorite
+                            else Icons.Filled.FavoriteBorder,
+                            contentDescription = stringResource(
+                                if (isFavorite) R.string.remove_from_favorites
+                                else R.string.add_to_favorites
+                            ),
+                            tint = if (isFavorite) DSFRTheme.colors.error
+                            else DSFRTheme.colors.textDefault
                         )
                     }
-                },
-                actions = {
-                    if (uiState is DetailUiState.Success) {
-                        IconButton(onClick = { viewModel.toggleFavorite() }) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite
-                                else Icons.Filled.FavoriteBorder,
-                                contentDescription = stringResource(
-                                    if (isFavorite) R.string.remove_from_favorites
-                                    else R.string.add_to_favorites
-                                ),
-                                tint = if (isFavorite) MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
                 }
-            )
-        }
-    ) { padding ->
+            }
+        )
+
         when (val state = uiState) {
             is DetailUiState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    DsfrCircularProgressIndicator()
                 }
             }
 
             is DetailUiState.Success -> {
                 FormationDetailContent(
                     formation = state.formation,
-                    baseFormation = state.baseFormation,
-                    modifier = Modifier.padding(padding)
+                    etablissementInfo = state.etablissementInfo,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
             is DetailUiState.Error -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
                     ) {
-                        Text(
+                        DsfrText(
                             text = state.message,
-                            color = MaterialTheme.colorScheme.error
+                            color = DsfrTextColor.Error
                         )
                         Button(onClick = { viewModel.retry() }) {
-                            Text(stringResource(R.string.retry))
+                            DsfrText(stringResource(R.string.retry))
                         }
                     }
                 }
@@ -164,68 +193,117 @@ fun FormationDetailScreen(
 @Composable
 fun FormationDetailContent(
     formation: Formation,
-    baseFormation: Formation,
+    etablissementInfo: EtablissementContactInfo,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var isScrollEnabled by remember { mutableStateOf(true) }
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(
-                    enabled = isScrollEnabled,
-                state = rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                enabled = isScrollEnabled,
+                state = rememberScrollState()
             )
+            .padding(DSFRTheme.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md),
+    ) {
+        DsfrCard(
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(DSFRTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
             ) {
-                Text(
+                DsfrText(
                     text = formation.etablissement
                         ?: stringResource(R.string.establishment_unknown),
-                    style = MaterialTheme.typography.titleLarge
+                    textStyle = DsfrTextStyle.HeadingXl
                 )
-                Text(
+                DsfrText(
                     text = formation.formationDetailleeString
                         ?: formation.formationLibString
                         ?: stringResource(R.string.formation),
-                    style = MaterialTheme.typography.titleMedium
+                    textStyle = DsfrTextStyle.HeadingMd,
                 )
-                Text(
+                DsfrText(
                     text = "${formation.ville ?: ""} - ${formation.departement ?: ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    textStyle = DsfrTextStyle.BodyMd,
+                    color = DsfrTextColor.Label
                 )
 
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.primary
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
+                    DsfrTag(
                         text = formation.filiereString ?: "",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        type = DsfrTagType.Primary,
+                        size = DsfrTagSize.Small
                     )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md)
+                    ) {
+                        if (!etablissementInfo.telephone.isNullOrEmpty()) {
+                            ContactButton(
+                                icon = painterResource(R.drawable.ic_phone),
+                                contentDescription = "Téléphone",
+                                value = etablissementInfo.telephone,
+                                onClickAction = {
+                                    val intent = Intent(
+                                        Intent.ACTION_DIAL,
+                                        "tel:${etablissementInfo.telephone}".toUri()
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
+
+                        if (!etablissementInfo.mail.isNullOrEmpty()) {
+                            ContactButton(
+                                icon = painterResource(R.drawable.ic_mail),
+                                contentDescription = "Email",
+                                value = etablissementInfo.mail,
+                                onClickAction = {
+                                    val intent = Intent(
+                                        Intent.ACTION_SENDTO,
+                                        "mailto:${etablissementInfo.mail}".toUri()
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
+
+                        if (!etablissementInfo.siteWeb.isNullOrEmpty()) {
+                            ContactButton(
+                                icon = painterResource(R.drawable.ic_web),
+                                contentDescription = "Site Web",
+                                value = etablissementInfo.siteWeb,
+                                onClickAction = {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        etablissementInfo.siteWeb.toUri()
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        Text(
+        DsfrText(
             text = stringResource(R.string.stats_2024),
-            style = MaterialTheme.typography.titleMedium
+            textStyle = DsfrTextStyle.HeadingMd,
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
         ) {
             StatCard(
                 title = stringResource(R.string.capacity),
@@ -241,7 +319,7 @@ fun FormationDetailContent(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
         ) {
             StatCard(
                 title = stringResource(R.string.admitted),
@@ -257,90 +335,126 @@ fun FormationDetailContent(
             )
         }
 
-        Text(
-            text = stringResource(R.string.gender_distribution),
-            style = MaterialTheme.typography.titleMedium
+        DsfrText(
+            text = "Statistiques de répartition",
+            textStyle = DsfrTextStyle.HeadingMd,
         )
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ProgressRow(
-                    label = stringResource(R.string.women),
-                    percentage = formation.pctFemmes ?: 0.0,
-                    count = formation.accFemmes ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.men),
-                    percentage = 100 - (formation.pctFemmes ?: 0.0),
-                    count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
+        val tabs = listOf(
+            stringResource(R.string.gender_distribution),
+            stringResource(R.string.bac_distribution),
+            stringResource(R.string.bac_mentions)
+        )
+        val pagerState = rememberPagerState(pageCount = { tabs.size })
+        val coroutineScope = rememberCoroutineScope()
+
+        SecondaryScrollableTabRow(
+            selectedTabIndex = pagerState.currentPage,
+            containerColor = DSFRTheme.colors.backgroundDefault,
+            contentColor = DSFRTheme.colors.textDefault,
+            edgePadding = 0.dp
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = pagerState.currentPage == index,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
+                    text = {
+                        DsfrText(
+                            text = title,
+                            textStyle = DsfrTextStyle.BodyMd,
+                            color = if (pagerState.currentPage == index) DsfrTextColor.Primary else DsfrTextColor.Mention
+                        )
+                    }
                 )
             }
         }
 
-        Text(
-            text = stringResource(R.string.bac_distribution),
-            style = MaterialTheme.typography.titleMedium
-        )
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth()
+        ) { page ->
+            DsfrCard(modifier = Modifier.fillMaxWidth()) {
+                when (page) {
+                    0 -> {
+                        Column(
+                            modifier = Modifier.padding(DSFRTheme.spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
+                        ) {
+                            ProgressRow(
+                                label = stringResource(R.string.women),
+                                percentage = formation.pctFemmes ?: 0.0,
+                                count = formation.accFemmes ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.men),
+                                percentage = 100 - (formation.pctFemmes ?: 0.0),
+                                count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
+                            )
+                        }
+                    }
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ProgressRow(
-                    label = stringResource(R.string.bac_general),
-                    percentage = formation.pctBacGeneral ?: 0.0,
-                    count = formation.accBacGeneral ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.bac_tech),
-                    percentage = formation.pctBacTech ?: 0.0,
-                    count = formation.accBacTech ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.bac_pro),
-                    percentage = formation.pctBacPro ?: 0.0,
-                    count = formation.accBacPro ?: 0
-                )
-                ProgressRow(
-                    label = stringResource(R.string.bac_autre),
-                    percentage = 100 - (formation.pctBacPro ?: 0.0) - (formation.pctBacTech
-                        ?: 0.0) - (formation.pctBacGeneral ?: 0.0),
-                    count = 100 - (formation.accBacPro ?: 0) - (formation.accBacGeneral
-                        ?: 0) - (formation.accBacTech ?: 0)
-                )
+                    1 -> {
+                        Column(
+                            modifier = Modifier.padding(DSFRTheme.spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
+                        ) {
+                            ProgressRow(
+                                label = stringResource(R.string.bac_general),
+                                percentage = formation.pctBacGeneral ?: 0.0,
+                                count = formation.accBacGeneral ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.bac_tech),
+                                percentage = formation.pctBacTech ?: 0.0,
+                                count = formation.accBacTech ?: 0
+                            )
+                            ProgressRow(
+                                label = stringResource(R.string.bac_pro),
+                                percentage = formation.pctBacPro ?: 0.0,
+                                count = formation.accBacPro ?: 0
+                            )
+                        }
+                    }
+
+                    2 -> {
+                        Column(
+                            modifier = Modifier.padding(DSFRTheme.spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            MentionRow(
+                                stringResource(R.string.mention_none),
+                                formation.mentionSans ?: 0
+                            )
+                            MentionRow(
+                                stringResource(R.string.mention_ab),
+                                formation.mentionAB ?: 0
+                            )
+                            MentionRow(stringResource(R.string.mention_b), formation.mentionB ?: 0)
+                            MentionRow(
+                                stringResource(R.string.mention_tb),
+                                formation.mentionTB ?: 0
+                            )
+                            MentionRow(
+                                stringResource(R.string.mention_tbf),
+                                formation.mentionTBF?.toInt() ?: 0
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        Text(
-            text = stringResource(R.string.bac_mentions),
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                MentionRow(stringResource(R.string.mention_none), formation.mentionSans ?: 0)
-                MentionRow(stringResource(R.string.mention_ab), formation.mentionAB ?: 0)
-                MentionRow(stringResource(R.string.mention_b), formation.mentionB ?: 0)
-                MentionRow(stringResource(R.string.mention_tb), formation.mentionTB ?: 0)
-                MentionRow(stringResource(R.string.mention_tbf), formation.mentionTBF?.toInt() ?: 0)
-            }
-        }
-
-        val coords = baseFormation.coordonnees
+        val coords = formation.coordonnees
         if (coords != null && coords.size >= 2) {
-            Text(
+            DsfrText(
                 text = stringResource(R.string.location),
-                style = MaterialTheme.typography.titleMedium
+                textStyle = DsfrTextStyle.HeadingMd
             )
-
-            Card(
+            DsfrCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
@@ -348,13 +462,23 @@ fun FormationDetailContent(
                 FormationMap(
                     latitude = coords[0],
                     longitude = coords[1],
-                    etablissement = baseFormation.etablissement ?: "",
+                    etablissement = formation.etablissement ?: "",
                     onMapInteraction = { isInteracting ->
                         isScrollEnabled = !isInteracting
+                    },
+                    onMarkerClick = {
+                        val latitude = coords[0]
+                        val longitude = coords[1]
+                        val label = formation.etablissement ?: "Formation Location"
+                        val gmmIntentUri =
+                            "geo:$latitude,$longitude?q=$latitude,$longitude($label)".toUri()
+                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                        context.startActivity(mapIntent)
                     }
                 )
             }
         }
+
     }
 }
 
@@ -364,19 +488,19 @@ fun StatCard(
     value: String,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier) {
+    DsfrCard(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(DSFRTheme.spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
+            DsfrText(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                textStyle = DsfrTextStyle.BodySm,
+                color = DsfrTextColor.Label
             )
-            Text(
+            DsfrText(
                 text = value,
-                style = MaterialTheme.typography.headlineMedium
+                textStyle = DsfrTextStyle.DisplayMd
             )
         }
     }
@@ -394,16 +518,16 @@ fun ProgressRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
+            DsfrText(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium
+                textStyle = DsfrTextStyle.BodySm
             )
-            Text(
+            DsfrText(
                 text = "${String.format("%.1f", percentage)}% ($count)",
-                style = MaterialTheme.typography.bodyMedium
+                textStyle = DsfrTextStyle.BodySm
             )
         }
-        LinearProgressIndicator(
+        DsfrLinearProgressIndicator(
             progress = { (percentage / 100).toFloat() },
             modifier = Modifier.fillMaxWidth(),
         )
@@ -416,8 +540,8 @@ fun MentionRow(label: String, count: Int) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(text = count.toString(), style = MaterialTheme.typography.bodyMedium)
+        DsfrText(text = label, textStyle = DsfrTextStyle.BodyMd)
+        DsfrText(text = count.toString(), textStyle = DsfrTextStyle.BodyMd)
     }
 }
 
@@ -426,13 +550,16 @@ fun FormationMap(
     latitude: Double,
     longitude: Double,
     etablissement: String,
-    onMapInteraction: (Boolean) -> Unit = {}
+    onMapInteraction: (Boolean) -> Unit = {},
+    onMarkerClick: () -> Unit = {}
 ) {
     val cameraState = rememberCameraState(
         CameraPosition(target = Position(longitude, latitude), zoom = 15.0)
     )
     val marker = painterResource(R.drawable.marker)
     var isInteracting by remember { mutableStateOf(false) }
+    LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(isInteracting) {
         onMapInteraction(isInteracting)
@@ -445,7 +572,8 @@ fun FormationMap(
     ) {
         MaplibreMap(
             baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .pointerInput(Unit) {
                     // https://github.com/maplibre/maplibre-compose/issues/726#issuecomment-3620016105
                     awaitPointerEventScope {
@@ -499,7 +627,64 @@ fun FormationMap(
                 textFont = const(listOf("Noto Sans Regular")),
                 textColor = const(androidx.compose.ui.graphics.Color.Black),
                 textOffset = offset(0.em, 0.6.em),
+                onClick = { point ->
+                    onMarkerClick()
+                    return@SymbolLayer ClickResult.Consume
+                }
             )
         }
+        DsfrButton(
+            onClick = {
+                coroutineScope.launch {
+                    cameraState.animateTo(
+                        cameraState.position.copy(
+                            target = Position(longitude, latitude),
+                            zoom = 15.0,
+                        )
+                    )
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(DSFRTheme.spacing.sm)
+        ) {
+            DsfrText("Recentrer")
+        }
+    }
+}
+
+@Composable
+fun ContactButton(
+    icon: Painter,
+    contentDescription: String,
+    value: String,
+    onClickAction: () -> Unit
+) {
+    val context = LocalContext.current
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+    Box(
+        modifier = Modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onClickAction() },
+                    onLongPress = {
+                        val clip = ClipData.newPlainText(contentDescription, value)
+                        clipboardManager.setPrimaryClip(clip)
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
+                            Toast.makeText(context, "$contentDescription copié", Toast.LENGTH_SHORT)
+                                .show()
+                    }
+                )
+            }
+            .size(DSFRTheme.spacing.md),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = icon,
+            contentDescription = contentDescription,
+            tint = DSFRTheme.colors.actionHigh,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }

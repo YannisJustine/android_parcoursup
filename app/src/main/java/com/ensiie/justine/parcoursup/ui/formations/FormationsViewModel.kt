@@ -6,6 +6,7 @@ import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationStats
 import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
+import com.ensiie.justine.parcoursup.ui.filters.SharedFilterViewModel
 import com.ensiie.justine.parcoursup.utils.LocationFilter
 import com.ensiie.justine.parcoursup.utils.LocationHelper
 import kotlinx.coroutines.flow.*
@@ -14,23 +15,18 @@ import kotlinx.coroutines.launch
 class FormationsViewModel(
     private val repository: FormationRepository,
     private val adresseRepository: AdresseRepository,
-    private val locationHelper: LocationHelper
+    private val locationHelper: LocationHelper,
+    private val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<FormationsUiState>(FormationsUiState.Loading)
     val uiState: StateFlow<FormationsUiState> = _uiState.asStateFlow()
     
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-    
-    private val _selectedFilieres = MutableStateFlow<Set<String>>(emptySet())
-    val selectedFilieres: StateFlow<Set<String>> = _selectedFilieres.asStateFlow()
-    
-    private val _selectedTypesEtab = MutableStateFlow<Set<String>>(emptySet())
-    val selectedTypesEtab: StateFlow<Set<String>> = _selectedTypesEtab.asStateFlow()
-    
-    private val _locationFilter = MutableStateFlow<LocationFilter?>(null)
-    val locationFilter: StateFlow<LocationFilter?> = _locationFilter.asStateFlow()
+    // Use shared filter state from SharedFilterViewModel
+    val searchQuery: StateFlow<String> = sharedFilterViewModel.searchQuery
+    val selectedFilieres: StateFlow<Set<String>> = sharedFilterViewModel.selectedFilieres
+    val selectedTypesEtab: StateFlow<Set<String>> = sharedFilterViewModel.selectedTypesEtab
+    val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
     
     private val _filieres = MutableStateFlow<List<String>>(emptyList())
     val filieres: StateFlow<List<String>> = _filieres.asStateFlow()
@@ -52,6 +48,7 @@ class FormationsViewModel(
         loadFormations()
         loadFilieres()
         loadContratsEtab()
+        observeFilterChanges()
     }
     
     private fun loadFilieres() {
@@ -63,6 +60,22 @@ class FormationsViewModel(
                 .onFailure {
                     _filieres.value = emptyList()
                 }
+        }
+    }
+    
+    /**
+     * Observe changes in shared filter state and reload data accordingly
+     */
+    private fun observeFilterChanges() {
+        viewModelScope.launch {
+            sharedFilterViewModel.filterState.collect { filterState ->
+                // Reload formations when filters change
+                if (filterState.searchQuery.isNotBlank()) {
+                    searchFormations(filterState.searchQuery)
+                } else {
+                    loadFormations(filterState.selectedFilieres, filterState.selectedTypesEtab)
+                }
+            }
         }
     }
     
@@ -83,7 +96,7 @@ class FormationsViewModel(
             
             if (append) _isLoadingMore.value = true
             
-            val location = _locationFilter.value
+            val location = locationFilter.value
             repository.searchFormations(
                 name = null,
                 filieres = filieres,
@@ -133,10 +146,10 @@ class FormationsViewModel(
     }
     
     fun searchFormations(query: String, append: Boolean = false) {
-        _searchQuery.value = query
+        sharedFilterViewModel.setSearchQuery(query)
         
         if (query.isBlank()) {
-            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+            loadFormations(selectedFilieres.value, contratsEtab = selectedTypesEtab.value)
             return
         }
         
@@ -152,11 +165,11 @@ class FormationsViewModel(
             
             if (append) _isLoadingMore.value = true
             
-            val location = _locationFilter.value
+            val location = locationFilter.value
             repository.searchFormations(
                 name = query,
-                filieres = _selectedFilieres.value,
-                contratsEtab = _selectedTypesEtab.value,
+                filieres = selectedFilieres.value,
+                contratsEtab = selectedTypesEtab.value,
                 latitude = location?.latitude,
                 longitude = location?.longitude,
                 radiusKm = location?.radiusKm,
@@ -191,57 +204,35 @@ class FormationsViewModel(
     }
     
     fun loadMoreFormations() {
-        if (isSearchMode && _searchQuery.value.isNotBlank()) {
-            searchFormations(_searchQuery.value, append = true)
+        if (isSearchMode && searchQuery.value.isNotBlank()) {
+            searchFormations(searchQuery.value, append = true)
         } else {
-            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value, append = true)
+            loadFormations(selectedFilieres.value, contratsEtab = selectedTypesEtab.value, append = true)
         }
     }
     
     fun toggleFiliere(filiere: String) {
-        _selectedFilieres.value = if (_selectedFilieres.value.contains(filiere)) {
-            _selectedFilieres.value - filiere
-        } else {
-            _selectedFilieres.value + filiere
-        }
-        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+        sharedFilterViewModel.toggleFiliere(filiere)
     }
     
     fun clearFilieres() {
-        _selectedFilieres.value = emptySet()
-        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+        sharedFilterViewModel.clearFilieres()
     }
         
     fun toggleContratEtab(contrat: String) {
-        _selectedTypesEtab.value = if (_selectedTypesEtab.value.contains(contrat)) {
-            _selectedTypesEtab.value - contrat
-        } else {
-            _selectedTypesEtab.value + contrat
-        }
-        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+        sharedFilterViewModel.toggleTypeEtab(contrat)
     }
     
     fun clearContratsEtab() {
-        _selectedTypesEtab.value = emptySet()
-        loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
+        sharedFilterViewModel.clearTypesEtab()
     }
     
     fun setLocationFilter(location: LocationFilter) {
-        _locationFilter.value = location
-        if (_searchQuery.value.isBlank()) {
-            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
-        } else {
-            searchFormations(_searchQuery.value)
-        }
+        sharedFilterViewModel.setLocationFilter(location)
     }
     
     fun clearLocationFilter() {
-        _locationFilter.value = null
-        if (_searchQuery.value.isBlank()) {
-            loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value)
-        } else {
-            searchFormations(_searchQuery.value)
-        }
+        sharedFilterViewModel.clearLocationFilter()
     }
     
     fun toggleFavorite(formation: Formation) {
@@ -265,14 +256,26 @@ class FormationsViewModel(
             _isRefreshing.value = true
             currentOffset = 0
             canLoadMore = true
-            
-            if (isSearchMode && _searchQuery.value.isNotBlank()) {
-                searchFormations(_searchQuery.value, append = false)
-            } else {
-                loadFormations(_selectedFilieres.value, contratsEtab = _selectedTypesEtab.value, append = false)
+
+            fun refresh() {
+                viewModelScope.launch {
+                    _isRefreshing.value = true
+                    currentOffset = 0
+                    canLoadMore = true
+
+                    if (isSearchMode && searchQuery.value.isNotBlank()) {
+                        searchFormations(searchQuery.value, append = false)
+                    } else {
+                        loadFormations(
+                            selectedFilieres.value,
+                            contratsEtab = selectedTypesEtab.value,
+                            append = false
+                        )
+                    }
+
+                    _isRefreshing.value = false
+                }
             }
-            
-            _isRefreshing.value = false
         }
     }
 }

@@ -10,6 +10,7 @@ import com.ensiie.justine.parcoursup.data.repository.EtablissementRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
 import com.ensiie.justine.parcoursup.ui.detail.FormationDetailViewModel
 import com.ensiie.justine.parcoursup.ui.favorites.FavoritesViewModel
+import com.ensiie.justine.parcoursup.ui.filters.SharedFilterViewModel
 import com.ensiie.justine.parcoursup.ui.formations.FormationsViewModel
 import com.ensiie.justine.parcoursup.ui.map.MapViewModel
 import com.ensiie.justine.parcoursup.utils.LocationHelper
@@ -133,6 +134,7 @@ val appModule = module {
     single { LocationHelper(get()) }
     
     // ViewModels
+    single { SharedFilterViewModel() } // Shared singleton instance across screens
     viewModelOf(::FormationsViewModel)
     viewModelOf(::FavoritesViewModel)
     viewModelOf(::MapViewModel)

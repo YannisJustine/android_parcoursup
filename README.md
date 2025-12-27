@@ -2,194 +2,203 @@
 
 Application Android moderne pour consulter les formations Parcoursup avec statistiques 2024 et carte interactive.
 
-## 🎯 Fonctionnalités
+## Fonctionnalites
 
-### 1. **Liste des Formations** 📚
-- Affichage de toutes les formations avec filtrage par filière
+### 1. Liste des Formations
+- Affichage de toutes les formations avec filtrage par filiere
 - Barre de recherche pour trouver rapidement une formation
-- Statistiques agrégées (nombre d'établissements, capacité moyenne, taux d'accès, moyenne au bac)
+- Statistiques agregees (nombre d'etablissements, capacite moyenne, taux d'acces, moyenne au bac)
 - Ajout aux favoris directement depuis la liste
 
-### 2. **Favoris** ⭐
+### 2. Favoris
 - Sauvegarde locale des formations favorites (Room Database)
-- Accès rapide aux formations sauvegardées
+- Acces rapide aux formations sauvegardees
 - Suppression facile des favoris
 
-### 3. **Carte Globale** 🗺️
-- Visualisation de tous les établissements sur une carte interactive Leaflet
-- Clic sur un marqueur pour accéder aux détails de la formation
-- Navigation fluide vers les pages de détail
+### 3. Carte Globale
+- Visualisation de tous les etablissements sur une carte interactive MapLibre
+- Clic sur un marqueur pour acceder aux details de la formation
+- Navigation fluide vers les pages de detail
 
-### 4. **Détails d'une Formation** 📊
-- Informations complètes sur l'établissement et la formation
-- **Statistiques 2024** :
-  - Capacité, nombre de vœux, admis
-  - Taux d'accès
-  - Répartition par genre (pourcentage et nombre)
-  - Répartition par bac d'origine (Général, Tech, Pro)
+### 4. Details d'une Formation
+- Informations completes sur l'etablissement et la formation
+- Statistiques 2024 :
+  - Capacite, nombre de voeux, admis
+  - Taux d'acces
+  - Repartition par genre (pourcentage et nombre)
+  - Repartition par bac d'origine (General, Tech, Pro)
   - Mentions au bac des admis
-- **Carte individuelle** avec localisation précise de l'établissement
+- Carte individuelle avec localisation precise de l'etablissement
 - Bouton favori pour sauvegarder la formation
 
-## 🏗️ Architecture
+## Architecture
 
-L'application suit les bonnes pratiques Android modernes inspirées du projet [Now in Android](https://github.com/android/nowinandroid) :
+L'application suit les bonnes pratiques Android modernes inspirees du projet [Now in Android](https://github.com/android/nowinandroid).
 
 ### Architecture MVVM (Model-View-ViewModel)
 ```
-app/
+app/src/main/java/com/ensiie/justine/parcoursup/
 ├── data/
 │   ├── model/          # Data classes (Formation, ApiResponse, etc.)
 │   ├── network/        # Retrofit API services
 │   ├── local/          # Room Database (favoris)
 │   └── repository/     # Repository pattern
-├── di/                 # Dependency Injection (Hilt)
+├── di/                 # Dependency Injection (Koin)
 ├── ui/
 │   ├── formations/     # Liste des formations
-│   ├── favorites/      # Écran des favoris
-│   ├── map/           # Carte globale
-│   └── detail/        # Détails d'une formation
-└── navigation/         # Navigation Compose
+│   ├── favorites/      # Ecran des favoris
+│   ├── filters/        # Filtres de recherche
+│   ├── map/            # Carte globale
+│   ├── detail/         # Details d'une formation
+│   └── theme/          # Theme Material 3
+├── navigation/         # Navigation 3
+└── utils/              # Utilitaires
 ```
 
-### Technologies utilisées
+### Technologies utilisees
 
-- **UI** : Jetpack Compose + Material Design 3
-- **Navigation** : Navigation Compose avec type-safe routes
-- **Dependency Injection** : Hilt
-- **Networking** : Retrofit + OkHttp + Moshi
-- **Database** : Room
-- **Async** : Kotlin Coroutines + Flow
-- **Maps** : Leaflet (WebView) - pas de Google SDK
-- **Architecture** : MVVM + Repository Pattern
-- **State Management** : StateFlow + Unidirectional Data Flow
+| Categorie | Technologie | Version |
+|-----------|-------------|---------|
+| UI | Jetpack Compose + Material Design 3 | BOM 2025.12.00 |
+| Navigation | Navigation 3 | 1.0.0 |
+| Dependency Injection | Koin | 4.1.1 |
+| Networking | Retrofit + OkHttp + Moshi | 3.0.0 / 5.3.2 / 1.15.2 |
+| Database | Room | 2.8.4 |
+| Async | Kotlin Coroutines + Flow | - |
+| Maps | MapLibre Compose | 0.12.1 |
+| Serialization | Kotlinx Serialization | 1.9.0 |
+| Architecture | MVVM + Repository Pattern | - |
+| State Management | StateFlow + Unidirectional Data Flow | - |
 
-## 📡 APIs utilisées
+## APIs utilisees
 
 ### API Parcoursup
-- **Base URL** : `https://data.enseignementsup-recherche.gouv.fr/api/records/1.0/`
-- **Datasets** :
-  - `fr-esr-parcoursup` : Données des formations
-  - Année 2024 (session = 2024)
+- Base URL : `https://data.enseignementsup-recherche.gouv.fr/api/records/1.0/`
+- Datasets :
+  - `fr-esr-parcoursup` : Donnees des formations
+  - Annee 2024 (session = 2024)
 
 ### Endpoints principaux
-- Récupération des filières
-- Formations par filière avec filtres
+- Recuperation des filieres
+- Formations par filiere avec filtres
 - Recherche de formations
-- Données géolocalisées pour la carte
+- Donnees geolocalisees pour la carte
 
-## 🚀 Lancement de l'application
+## Lancement de l'application
 
-### Prérequis
-- Android Studio Hedgehog (2023.1.1) ou supérieur
+### Prerequis
+- Android Studio Ladybug (2024.2.1) ou superieur
 - JDK 11
 - Android SDK (min: 24, target: 36)
 
 ### Instructions
 
-1. **Cloner le projet** (déjà fait ici)
+1. Cloner le projet
 
-2. **Ouvrir dans Android Studio**
+2. Ouvrir dans Android Studio
    ```bash
    # Ouvrir le dossier android/ dans Android Studio
    ```
 
-3. **Synchroniser Gradle**
-   - Android Studio va automatiquement télécharger les dépendances
+3. Synchroniser Gradle
+   - Android Studio va automatiquement telecharger les dependances
 
-4. **Lancer l'application**
-   - Connecter un appareil Android ou utiliser un émulateur
-   - Cliquer sur Run (▶️)
+4. Lancer l'application
+   - Connecter un appareil Android ou utiliser un emulateur
+   - Cliquer sur Run
 
-### Build Gradle
+### Configuration Gradle
 
 L'application utilise :
-- Kotlin 2.0.21
-- Compose BOM 2024.09.00
-- Hilt 2.51.1
-- Retrofit 2.11.0
-- Room 2.6.1
-- Navigation Compose 2.8.5
+- Kotlin 2.2.21
+- Compose BOM 2025.12.00
+- Koin 4.1.1
+- Retrofit 3.0.0
+- OkHttp 5.3.2
+- Room 2.8.4
+- Navigation 3 1.0.0
+- MapLibre Compose 0.12.1
+- KSP 2.3.0
 
-## 🎨 Interface utilisateur
+## Interface utilisateur
 
 ### Navigation Bottom Bar
 Trois onglets principaux :
-1. 🔍 **Formations** - Liste et recherche
-2. ⭐ **Favoris** - Formations sauvegardées
-3. 🗺️ **Carte** - Vue géographique
+1. Formations - Liste et recherche
+2. Favoris - Formations sauvegardees
+3. Carte - Vue geographique
 
-### Thème
+### Theme
 - Material Design 3
 - Support du mode sombre
 - Couleurs adaptatives
 
-## 📊 Données et Statistiques
+## Donnees et Statistiques
 
 L'application affiche les statistiques 2024 :
-- Capacité des formations
-- Taux d'accès
-- Répartition hommes/femmes
-- Types de bac (Général, Technologique, Professionnel)
+- Capacite des formations
+- Taux d'acces
+- Repartition hommes/femmes
+- Types de bac (General, Technologique, Professionnel)
 - Mentions au bac des admis
-- Moyenne des moyennes au bac (calculée)
+- Moyenne des moyennes au bac (calculee)
 
-## 🗺️ Cartes Leaflet
+## Cartes MapLibre
 
 ### Carte Globale
-- Affiche tous les établissements avec coordonnées GPS
+- Affiche tous les etablissements avec coordonnees GPS
 - Zoom et navigation
-- Popup avec nom de l'établissement et bouton d'action
+- Popup avec nom de l'etablissement et bouton d'action
 
 ### Carte Individuelle
-- Zoom sur l'établissement sélectionné
+- Zoom sur l'etablissement selectionne
 - Marqueur avec popup
-- Intégration via WebView
+- Integration native via MapLibre Compose
 
-## 🔄 Gestion des données
+## Gestion des donnees
 
 ### Local (Room)
 - Stockage des formations favorites
-- Accès rapide et offline
+- Acces rapide et offline
 - Synchronisation automatique
 
 ### Remote (Retrofit)
 - Appels API asynchrones avec Coroutines
 - Gestion des erreurs
-- Cache en mémoire avec StateFlow
+- Cache en memoire avec StateFlow
 
-## 🧪 Tests
+## Tests
 
 Structure pour les tests :
 - `test/` : Tests unitaires (ViewModels, Repository)
 - `androidTest/` : Tests d'instrumentation (UI, Database)
 
-## 📝 Notes techniques
+## Notes techniques
 
-### Bonnes pratiques appliquées
-✅ Single Activity Architecture
-✅ Unidirectional Data Flow (UDF)
-✅ Separation of Concerns
-✅ Dependency Injection
-✅ Repository Pattern
-✅ StateFlow pour la gestion d'état
-✅ Coroutines pour l'asynchrone
-✅ Type-safe Navigation
-✅ Material Design 3
+### Bonnes pratiques appliquees
+- Single Activity Architecture
+- Unidirectional Data Flow (UDF)
+- Separation of Concerns
+- Dependency Injection avec Koin
+- Repository Pattern
+- StateFlow pour la gestion d'etat
+- Coroutines pour l'asynchrone
+- Type-safe Navigation avec Kotlinx Serialization
+- Material Design 3
 
-### Améliorations possibles
+### Ameliorations possibles
 - Pagination pour la liste des formations
-- Filtres avancés (département, capacité, taux d'accès)
+- Filtres avances (departement, capacite, taux d'acces)
 - Graphiques pour les statistiques
 - Mode hors ligne complet
 - Notifications pour les formations favorites
 - Partage de formations
 - Comparateur de formations
 
-## 📄 Licence
+## Licence
 
-Projet éducatif - BUT S4 WEB
+Projet educatif - ENSIIE
 
-## 👥 Auteur
+## Auteur
 
-Application développée selon les spécifications du projet Parcoursup avec les bonnes pratiques Android modernes.
+Application developpee selon les specifications du projet Parcoursup avec les bonnes pratiques Android modernes.

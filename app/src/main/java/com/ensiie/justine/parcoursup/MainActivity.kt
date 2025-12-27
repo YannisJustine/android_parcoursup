@@ -48,9 +48,11 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ParcoursupApp() {
+    var topLevelRoutes = setOf(FormationsList, Favorites, GlobalMap)
+
     val navigationState = rememberNavigationState(
         startRoute = FormationsList,
-        topLevelRoutes = setOf(FormationsList, Favorites, GlobalMap)
+        topLevelRoutes
     )
 
     val navigator = remember { Navigator(navigationState) }
@@ -89,9 +91,7 @@ fun ParcoursupApp() {
     }
 
     val currentRoute = navigationState.backStacks[navigationState.topLevelRoute]?.lastOrNull()
-    val showBottomBar = currentRoute is FormationsList ||
-            currentRoute is Favorites ||
-            currentRoute is GlobalMap
+    val showBottomBar = currentRoute in topLevelRoutes
 
     DsfrScaffold(
         modifier = Modifier.fillMaxSize(),
@@ -145,22 +145,50 @@ fun ParcoursupApp() {
             }
         }
     ) { innerPadding ->
+        val routeIndexMap = TopLevelDestination.entries
+            .mapIndexed { index, destination -> destination.route.toString() to index }
+            .toMap()
+        
         NavDisplay(
             entries = navigationState.toEntries(entryProvider),
             onBack = { navigator.goBack() },
             modifier = Modifier.padding(innerPadding),
             transitionSpec = {
-                // Slide in from right when navigating forward
-                slideInHorizontally(
-                    initialOffsetX = { it },
-                    animationSpec = tween(500)
-                ) togetherWith slideOutHorizontally(
-                    targetOffsetX = { -it },
-                    animationSpec = tween(500)
-                )
+                val fromRoute = initialState.key.toString()
+                val toRoute = targetState.key.toString()
+                
+                val fromIndex = routeIndexMap[fromRoute] ?: -1
+                val toIndex = routeIndexMap[toRoute] ?: -1
+                
+                if (fromIndex != -1 && toIndex != -1) {
+                    if (toIndex > fromIndex) {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(500)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { -it },
+                            animationSpec = tween(500)
+                        )
+                    } else {
+                        slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(500)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(500)
+                        )
+                    }
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(500)
+                    ) togetherWith slideOutHorizontally(
+                        targetOffsetX = { -it },
+                        animationSpec = tween(500)
+                    )
+                }
             },
             popTransitionSpec = {
-                // Slide in from left when navigating back
                 slideInHorizontally(
                     initialOffsetX = { -it },
                     animationSpec = tween(500)
@@ -170,7 +198,6 @@ fun ParcoursupApp() {
                 )
             },
             predictivePopTransitionSpec = {
-                // Slide in from left when navigating back
                 slideInHorizontally(
                     initialOffsetX = { -it },
                     animationSpec = tween(500)

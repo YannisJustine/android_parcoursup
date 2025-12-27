@@ -7,13 +7,13 @@ class EtablissementRepository(
     private val apiServiceSup: EtablissementApiService,
     private val apiServiceEducation: EtablissementApiService
 ) {
-    
+
     suspend fun getEtablissementContactInfo(uai: String): Result<EtablissementContactInfo> {
         return try {
             val responseSup = apiServiceSup.getEtablissementSup(
                 where = "uai='$uai'"
             )
-            
+
             val etabSup = responseSup.results?.firstOrNull()
             if (etabSup != null) {
                 return Result.success(
@@ -32,11 +32,11 @@ class EtablissementRepository(
                     )
                 )
             }
-            
+
             val responseEdu = apiServiceEducation.getEtablissementEducation(
                 where = "identifiant_de_l_etablissement='$uai'"
             )
-            
+
             val etabEdu = responseEdu.results?.firstOrNull()
             if (etabEdu != null) {
                 return Result.success(
@@ -55,7 +55,7 @@ class EtablissementRepository(
                     )
                 )
             }
-            
+
             Result.success(
                 EtablissementContactInfo(
                     uai = uai,
@@ -71,7 +71,7 @@ class EtablissementRepository(
                     type = null
                 )
             )
-            
+
         } catch (e: Exception) {
             Result.success(
                 EtablissementContactInfo(

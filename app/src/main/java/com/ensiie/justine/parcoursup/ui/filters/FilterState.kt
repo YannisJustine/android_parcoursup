@@ -21,14 +21,14 @@ data class FilterState(
                 selectedTypesEtab.isNotEmpty() ||
                 searchQuery.isNotBlank()
     }
-    
+
     /**
      * Clear all filters
      */
     fun clearAll(): FilterState {
         return FilterState()
     }
-    
+
     /**
      * Get a count of active filters (excluding search query)
      */

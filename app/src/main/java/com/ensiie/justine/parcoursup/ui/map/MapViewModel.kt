@@ -3,7 +3,6 @@ package com.ensiie.justine.parcoursup.ui.map
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationMap
 import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
@@ -19,21 +18,21 @@ class MapViewModel(
     private val adresseRepository: AdresseRepository,
     private val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
-        
+
     // Use shared filter state from SharedFilterViewModel
     val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
-    
+
     // Track clicked formations at location (persists across navigation)
     private val _clickedFormations = MutableStateFlow<List<FormationMap>?>(null)
     val clickedFormations: StateFlow<List<FormationMap>?> = _clickedFormations.asStateFlow()
-    
+
     init {
         observeFilterChanges()
     }
-    
+
     /**
      * Observe changes in shared filter state and reload map data accordingly
      */
@@ -45,11 +44,11 @@ class MapViewModel(
             }
         }
     }
-    
+
     private fun loadFormationsForMap(location: LocationFilter? = null) {
         viewModelScope.launch {
             _uiState.value = MapUiState.Loading
-            
+
             repository.getFormationsForMap(location = location)
                 .onSuccess { formations ->
                     Log.d("MapViewModel", "Formations count: ${formations.size}")
@@ -62,7 +61,7 @@ class MapViewModel(
                 }
         }
     }
-    
+
     fun retry() {
         loadFormationsForMap(locationFilter.value)
     }
@@ -74,7 +73,7 @@ class MapViewModel(
     fun clearLocationFilter() {
         sharedFilterViewModel.clearLocationFilter()
     }
-    
+
     fun setClickedFormations(formations: List<FormationMap>?) {
         _clickedFormations.value = formations
     }

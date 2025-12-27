@@ -23,11 +23,11 @@ data class DSFRColors(
     val blueFrance850: Color,
     val blueFrance113: Color,
     val blueFrance975: Color,
-    
+
     val rougeMarianne: Color,
     val rougeMarianne425: Color,
     val rougeMarianne625: Color,
-    
+
     val grey950: Color,
     val grey900: Color,
     val grey850: Color,
@@ -37,14 +37,14 @@ data class DSFRColors(
     val grey975: Color,
     val grey950alt: Color,
     val grey1000alt: Color,
-    
+
     val textTitle: Color,
     val textLabel: Color,
     val textDefault: Color,
     val textMention: Color,
     val textDisabled: Color,
     val textInverted: Color,
-    
+
     val backgroundDefault: Color,
     val backgroundAlt: Color,
     val backgroundContrast: Color,
@@ -53,29 +53,29 @@ data class DSFRColors(
     val backgroundOpen: Color,
     val backgroundRaised: Color,
     val backgroundOverlay: Color,
-    
+
     val borderDefault: Color,
     val borderPlain: Color,
     val borderActionHigh: Color,
-    
+
     val actionHigh: Color,
     val actionLow: Color,
     val actionDisabled: Color,
-    
+
     val success: Color,
     val error: Color,
     val warning: Color,
     val info: Color,
-    
+
     val buttonPrimary: Color,
     val buttonPrimaryHover: Color,
     val buttonSecondary: Color,
     val buttonSecondaryHover: Color,
     val buttonTertiary: Color,
-    
+
     val inputBorder: Color,
     val inputBackground: Color,
-    
+
     val chipBackground: Color,
     val chipBorder: Color
 )
@@ -140,11 +140,11 @@ private val LightDSFRColors = DSFRColors(
     blueFrance850 = Color(0xFF2323FF),
     blueFrance113 = Color(0xFFECEDFE),
     blueFrance975 = Color(0xFFE3E3FD),
-    
+
     rougeMarianne = Color(0xFFE1000F),
     rougeMarianne425 = Color(0xFFF95C5E),
     rougeMarianne625 = Color(0xFFCE0500),
-    
+
     grey950 = Color(0xFF161616),
     grey900 = Color(0xFF1E1E1E),
     grey850 = Color(0xFF2A2A2A),
@@ -154,14 +154,14 @@ private val LightDSFRColors = DSFRColors(
     grey975 = Color(0xFFF6F6F6),
     grey950alt = Color(0xFFFFFFFF),
     grey1000alt = Color(0xFF000000),
-    
+
     textTitle = Color(0xFF161616),
     textLabel = Color(0xFF666666),
     textDefault = Color(0xFF3A3A3A),
     textMention = Color(0xFF666666),
     textDisabled = Color(0xFF929292),
     textInverted = Color(0xFFFFFFFF),
-    
+
     backgroundDefault = Color(0xFFFFFFFF),
     backgroundAlt = Color(0xFFF6F6F6),
     backgroundContrast = Color(0xFF161616),
@@ -170,29 +170,29 @@ private val LightDSFRColors = DSFRColors(
     backgroundOpen = Color(0xFFECEDFE),
     backgroundRaised = Color(0xFFFFFFFF),
     backgroundOverlay = Color(0xCC000000),
-    
+
     borderDefault = Color(0xFFDDDDDD),
     borderPlain = Color(0xFF929292),
     borderActionHigh = Color(0xFF000091),
-    
+
     actionHigh = Color(0xFF000091),
     actionLow = Color(0xFFE3E3FD),
     actionDisabled = Color(0xFFE5E5E5),
-    
+
     success = Color(0xFF18753C),
     error = Color(0xFFCE0500),
     warning = Color(0xFFB34000),
     info = Color(0xFF0063CB),
-    
+
     buttonPrimary = Color(0xFF000091),
     buttonPrimaryHover = Color(0xFF1212FF),
     buttonSecondary = Color(0xFFFFFFFF),
     buttonSecondaryHover = Color(0xFFF6F6F6),
     buttonTertiary = Color(0x00000000),
-    
+
     inputBorder = Color(0xFF3A3A3A),
     inputBackground = Color(0xFFEEEEEE),
-    
+
     chipBackground = Color(0xFFE3E3FD),
     chipBorder = Color(0xFF000091)
 )
@@ -206,11 +206,11 @@ private val DarkDSFRColors = DSFRColors(
     blueFrance850 = Color(0xFF5555F3),
     blueFrance113 = Color(0xFF2A2A6C),
     blueFrance975 = Color(0xFF313178),
-    
+
     rougeMarianne = Color(0xFFFF5C5C),
     rougeMarianne425 = Color(0xFFFF9191),
     rougeMarianne625 = Color(0xFFFE4B4B),
-    
+
     grey950 = Color(0xFFF6F6F6),
     grey900 = Color(0xFFEEEEEE),
     grey850 = Color(0xFFDDDDDD),
@@ -220,14 +220,14 @@ private val DarkDSFRColors = DSFRColors(
     grey975 = Color(0xFF1E1E1E),
     grey950alt = Color(0xFF161616),
     grey1000alt = Color(0xFFFFFFFF),
-    
+
     textTitle = Color(0xFFF6F6F6),
     textLabel = Color(0xFFCCCCCC),
     textDefault = Color(0xFFEEEEEE),
     textMention = Color(0xFFCCCCCC),
     textDisabled = Color(0xFF929292),
     textInverted = Color(0xFF161616),
-    
+
     backgroundDefault = Color(0xFF1E1E1E),
     backgroundAlt = Color(0xFF2A2A2A),
     backgroundContrast = Color(0xFFFFFFFF),
@@ -236,29 +236,29 @@ private val DarkDSFRColors = DSFRColors(
     backgroundOpen = Color(0xFF313178),
     backgroundRaised = Color(0xFF2A2A2A),
     backgroundOverlay = Color(0xCC000000),
-    
+
     borderDefault = Color(0xFF3A3A3A),
     borderPlain = Color(0xFF6A6A6A),
     borderActionHigh = Color(0xFF8585F6),
-    
+
     actionHigh = Color(0xFF8585F6),
     actionLow = Color(0xFF2A2A6C),
     actionDisabled = Color(0xFF3A3A3A),
-    
+
     success = Color(0xFF27A658),
     error = Color(0xFFFF5C5C),
     warning = Color(0xFFFF9940),
     info = Color(0xFF518FFF),
-    
+
     buttonPrimary = Color(0xFF8585F6),
     buttonPrimaryHover = Color(0xFF6A6AF4),
     buttonSecondary = Color(0xFF2A2A2A),
     buttonSecondaryHover = Color(0xFF383838),
     buttonTertiary = Color(0x00000000),
-    
+
     inputBorder = Color(0xFFCCCCCC),
     inputBackground = Color(0xFF2A2A2A),
-    
+
     chipBackground = Color(0xFF2A2A6C),
     chipBorder = Color(0xFF8585F6)
 )
@@ -353,7 +353,7 @@ fun DSFRTheme(
     content: @Composable () -> Unit
 ) {
     val colors = if (darkTheme) DarkDSFRColors else LightDSFRColors
-    
+
     CompositionLocalProvider(
         LocalDSFRColors provides colors,
         LocalDSFRTypography provides DefaultDSFRTypography,
@@ -367,15 +367,15 @@ object DSFRTheme {
     val colors: DSFRColors
         @Composable
         get() = LocalDSFRColors.current
-    
+
     val typography: DSFRTypography
         @Composable
         get() = LocalDSFRTypography.current
-    
+
     val spacing: DSFRSpacing
         @Composable
         get() = LocalDSFRSpacing.current
-    
+
     val elevation: DSFRElevation
         @Composable
         get() = LocalDSFRElevation.current

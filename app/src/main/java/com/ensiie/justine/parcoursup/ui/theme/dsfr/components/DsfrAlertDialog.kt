@@ -1,12 +1,9 @@
 package com.ensiie.justine.parcoursup.ui.theme.dsfr.components
 
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.window.DialogProperties
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 

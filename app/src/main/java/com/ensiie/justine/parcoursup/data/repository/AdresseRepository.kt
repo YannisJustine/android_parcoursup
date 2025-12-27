@@ -7,7 +7,7 @@ import com.ensiie.justine.parcoursup.data.network.AdresseApiService
 class AdresseRepository(
     private val apiService: AdresseApiService
 ) {
-    
+
     suspend fun searchCities(query: String): Result<List<City>> {
         return try {
             if (query.isBlank()) {

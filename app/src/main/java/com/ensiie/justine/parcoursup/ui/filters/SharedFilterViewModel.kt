@@ -17,41 +17,41 @@ import kotlinx.coroutines.flow.update
  * the same instance is shared between list view and map view.
  */
 class SharedFilterViewModel : ViewModel() {
-    
+
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
-    
+
     // Individual state flows for convenient access using map and stateIn
-    val locationFilter: StateFlow<LocationFilter?> = 
+    val locationFilter: StateFlow<LocationFilter?> =
         _filterState.map { it.locationFilter }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    
-    val selectedFilieres: StateFlow<Set<String>> = 
+
+    val selectedFilieres: StateFlow<Set<String>> =
         _filterState.map { it.selectedFilieres }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
-    
-    val selectedTypesEtab: StateFlow<Set<String>> = 
+
+    val selectedTypesEtab: StateFlow<Set<String>> =
         _filterState.map { it.selectedTypesEtab }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
-    
-    val searchQuery: StateFlow<String> = 
+
+    val searchQuery: StateFlow<String> =
         _filterState.map { it.searchQuery }
             .stateIn(viewModelScope, SharingStarted.Eagerly, "")
-    
+
     /**
      * Set location filter
      */
     fun setLocationFilter(filter: LocationFilter) {
         _filterState.update { it.copy(locationFilter = filter) }
     }
-    
+
     /**
      * Clear location filter
      */
     fun clearLocationFilter() {
         _filterState.update { it.copy(locationFilter = null) }
     }
-    
+
     /**
      * Toggle a filiere selection
      */
@@ -65,21 +65,21 @@ class SharedFilterViewModel : ViewModel() {
             currentState.copy(selectedFilieres = newFilieres)
         }
     }
-    
+
     /**
      * Set multiple filieres at once
      */
     fun setFilieres(filieres: Set<String>) {
         _filterState.update { it.copy(selectedFilieres = filieres) }
     }
-    
+
     /**
      * Clear all filiere selections
      */
     fun clearFilieres() {
         _filterState.update { it.copy(selectedFilieres = emptySet()) }
     }
-    
+
     /**
      * Toggle a type etablissement selection
      */
@@ -93,49 +93,49 @@ class SharedFilterViewModel : ViewModel() {
             currentState.copy(selectedTypesEtab = newTypes)
         }
     }
-    
+
     /**
      * Set multiple types etablissement at once
      */
     fun setTypesEtab(types: Set<String>) {
         _filterState.update { it.copy(selectedTypesEtab = types) }
     }
-    
+
     /**
      * Clear all type etablissement selections
      */
     fun clearTypesEtab() {
         _filterState.update { it.copy(selectedTypesEtab = emptySet()) }
     }
-    
+
     /**
      * Update search query
      */
     fun setSearchQuery(query: String) {
         _filterState.update { it.copy(searchQuery = query) }
     }
-    
+
     /**
      * Clear search query
      */
     fun clearSearchQuery() {
         _filterState.update { it.copy(searchQuery = "") }
     }
-    
+
     /**
      * Clear all filters
      */
     fun clearAllFilters() {
         _filterState.value = FilterState()
     }
-    
+
     /**
      * Check if any filters are active
      */
     fun hasActiveFilters(): Boolean {
         return _filterState.value.hasActiveFilters()
     }
-    
+
     /**
      * Get count of active filters
      */

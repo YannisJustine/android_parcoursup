@@ -1,17 +1,14 @@
 package com.ensiie.justine.parcoursup.ui.theme.dsfr.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.input.VisualTransformation
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 
@@ -37,7 +34,7 @@ fun DsfrTextField(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
     val colors = DSFRTheme.colors
-    
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,

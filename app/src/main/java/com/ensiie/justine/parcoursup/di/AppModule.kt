@@ -27,26 +27,27 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
-private const val BASE_URL = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/"
+private const val BASE_URL =
+    "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/"
 private const val ADRESSE_BASE_URL = "https://api-adresse.data.gouv.fr/"
 private const val ETABLISSEMENT_SUP_BASE_URL = "https://data.enseignementsup-recherche.gouv.fr/"
 private const val ETABLISSEMENT_EDU_BASE_URL = "https://data.education.gouv.fr/"
 
 val appModule = module {
-    
+
     // Moshi
     single {
         Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
     }
-    
+
     // OkHttpClient
     single {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
-        
+
         OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -54,7 +55,7 @@ val appModule = module {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
-    
+
     // Retrofit
     single {
         Retrofit.Builder()
@@ -87,12 +88,12 @@ val appModule = module {
             .addConverterFactory(MoshiConverterFactory.create(get()))
             .build()
     }
-    
+
     // API Services
     single {
         get<Retrofit>().create(ParcoursupApiService::class.java)
     }
-    
+
     single {
         get<Retrofit>(qualifier = named("adresse"))
             .create(AdresseApiService::class.java)
@@ -102,7 +103,7 @@ val appModule = module {
         get<Retrofit>(qualifier = named("etablissementSup"))
             .create(EtablissementApiService::class.java)
     }
-    
+
     single(qualifier = named("etablissementEdu")) {
         get<Retrofit>(qualifier = named("etablissementEdu"))
             .create(EtablissementApiService::class.java)
@@ -116,10 +117,10 @@ val appModule = module {
             "parcoursup_database"
         ).build()
     }
-    
+
     // DAO
     single { get<ParcoursupDatabase>().favoriteFormationDao() }
-    
+
     // Repositories
     singleOf(::FormationRepository)
     singleOf(::AdresseRepository)
@@ -132,13 +133,13 @@ val appModule = module {
 
     // Helpers    
     single { LocationHelper(get()) }
-    
+
     // ViewModels
     single { SharedFilterViewModel() } // Shared singleton instance across screens
     viewModelOf(::FormationsViewModel)
     viewModelOf(::FavoritesViewModel)
     viewModelOf(::MapViewModel)
-    viewModel { (recordId: String) -> 
+    viewModel { (recordId: String) ->
         FormationDetailViewModel(recordId, get(), get())
     }
 }

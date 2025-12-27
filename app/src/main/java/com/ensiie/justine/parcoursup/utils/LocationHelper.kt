@@ -3,7 +3,6 @@ package com.ensiie.justine.parcoursup.utils
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -12,10 +11,10 @@ import com.google.android.gms.tasks.CancellationTokenSource
 
 // https://medium.com/@munbonecci/how-to-get-your-location-in-jetpack-compose-f085031df4c1
 class LocationHelper(private val context: Context) {
-    
+
     private val fusedLocationProviderClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
-    
+
     fun areLocationPermissionsGranted(): Boolean {
         return (ActivityCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION

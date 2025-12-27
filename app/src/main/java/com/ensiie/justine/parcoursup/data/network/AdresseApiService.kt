@@ -5,7 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface AdresseApiService {
-    
+
     @GET("search/")
     suspend fun searchCity(
         @Query("q") query: String,

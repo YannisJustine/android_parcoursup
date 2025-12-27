@@ -3,7 +3,16 @@ package com.ensiie.justine.parcoursup.ui.filters
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -13,8 +22,19 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -26,11 +46,10 @@ import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.City
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButton
+import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButtonType
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrFilterChip
-import androidx.compose.material3.Icon
-import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButtonType
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextField
@@ -70,7 +89,8 @@ fun LocationFilterCard(
                 if (locationFilter != null) {
                     Column {
                         DsfrText(
-                            text = locationFilter.cityName ?: stringResource(R.string.current_location),
+                            text = locationFilter.cityName
+                                ?: stringResource(R.string.current_location),
                             textStyle = DsfrTextStyle.BodyMd,
                             fontWeight = FontWeight.Bold
                         )
@@ -126,7 +146,7 @@ fun LocationSearchModal(
     var selectedRadius by remember { mutableStateOf(initialRadius) }
     var isSearching by remember { mutableStateOf(false) }
     var selectedCity by remember { mutableStateOf<City?>(initialCity) }
-    val scope = rememberCoroutineScope()
+    rememberCoroutineScope()
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.length >= 2) {
@@ -148,7 +168,7 @@ fun LocationSearchModal(
         onDismissRequest = onDismiss,
         containerColor = DSFRTheme.colors.backgroundDefault,
         modifier = Modifier.fillMaxWidth()
-) {
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -285,7 +305,7 @@ fun LocationSearchModal(
                     }
                 }
             }
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

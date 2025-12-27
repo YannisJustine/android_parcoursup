@@ -1,13 +1,11 @@
 package com.ensiie.justine.parcoursup.ui.theme.dsfr.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 
@@ -21,7 +19,7 @@ fun DsfrFilterChip(
     leadingIcon: @Composable (() -> Unit)? = null
 ) {
     val colors = DSFRTheme.colors
-    
+
     FilterChip(
         selected = selected,
         onClick = onClick,

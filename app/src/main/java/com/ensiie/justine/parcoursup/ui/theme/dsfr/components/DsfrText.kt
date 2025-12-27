@@ -1,12 +1,10 @@
 package com.ensiie.justine.parcoursup.ui.theme.dsfr.components
 
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -69,7 +67,7 @@ fun DsfrText(
 ) {
     val colors = DSFRTheme.colors
     val typography = DSFRTheme.typography
-    
+
     val style = when (textStyle) {
         DsfrTextStyle.DisplayXl -> typography.displayXl
         DsfrTextStyle.DisplayLg -> typography.displayLg
@@ -85,7 +83,7 @@ fun DsfrText(
         DsfrTextStyle.BodySm -> typography.bodySm
         DsfrTextStyle.BodyXs -> typography.bodyXs
     }
-    
+
     val textColor = customColor ?: when (color) {
         DsfrTextColor.Title -> colors.textTitle
         DsfrTextColor.Label -> colors.textLabel
@@ -99,7 +97,7 @@ fun DsfrText(
         DsfrTextColor.Warning -> colors.warning
         DsfrTextColor.Info -> colors.info
     }
-    
+
     Text(
         text = text,
         modifier = modifier,

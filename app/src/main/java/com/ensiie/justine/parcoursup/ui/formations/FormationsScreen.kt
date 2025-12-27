@@ -99,7 +99,7 @@ fun FormationsScreen(
     val locationFilter by viewModel.locationFilter.collectAsState()
     val filterSheetState = rememberModalBottomSheetState()
     val locationSheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
+    rememberCoroutineScope()
 
     var filterType by remember { mutableStateOf<FilterType?>(null) }
     var showLocationModal by remember { mutableStateOf(false) }
@@ -281,12 +281,13 @@ fun FormationsScreen(
             contract = ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
             val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-            val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+            val coarseLocationGranted =
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
 
             if (fineLocationGranted || coarseLocationGranted) {
                 isLoadingLocation = true
                 locationError = null
-                
+
                 locationHelper.getCurrentLocation(
                     onGetCurrentLocationSuccess = { (latitude, longitude) ->
                         viewModel.setLocationFilter(
@@ -302,7 +303,8 @@ fun FormationsScreen(
                     },
                     onGetCurrentLocationFailed = { exception ->
                         isLoadingLocation = false
-                        locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                        locationError =
+                            exception.message ?: "Erreur lors de la récupération de votre position"
                     }
                 )
             } else {
@@ -350,7 +352,8 @@ fun FormationsScreen(
                         },
                         onGetCurrentLocationFailed = { exception ->
                             isLoadingLocation = false
-                            locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                            locationError = exception.message
+                                ?: "Erreur lors de la récupération de votre position"
                         }
                     )
                 } else {
@@ -502,26 +505,34 @@ fun FilterTagsRow(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.CenterVertically)
         )
-        
+
         DsfrFilterChip(
             selected = selectedFilieresCount > 0,
             onClick = onFiliereClick,
             label = {
-            if (selectedFilieresCount == 0) {
-                Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
-                ) {
-                DsfrText(stringResource(R.string.filter_by_filiere), textStyle = DsfrTextStyle.BodySm)
-                Icon(
-                    painter = painterResource(id = R.drawable.add_circle_24dp),
-                    contentDescription = null,
-                    modifier = Modifier.size(DSFRTheme.spacing.md)
-                )
+                if (selectedFilieresCount == 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
+                    ) {
+                        DsfrText(
+                            stringResource(R.string.filter_by_filiere),
+                            textStyle = DsfrTextStyle.BodySm
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.add_circle_24dp),
+                            contentDescription = null,
+                            modifier = Modifier.size(DSFRTheme.spacing.md)
+                        )
+                    }
+                } else {
+                    DsfrText(
+                        stringResource(
+                            R.string.filter_by_filiere_count,
+                            selectedFilieresCount
+                        ), textStyle = DsfrTextStyle.BodySm
+                    )
                 }
-            } else {
-                DsfrText(stringResource(R.string.filter_by_filiere_count, selectedFilieresCount), textStyle = DsfrTextStyle.BodySm)
-            }
             }
         )
 
@@ -529,21 +540,27 @@ fun FilterTagsRow(
             selected = selectedContratsCount > 0,
             onClick = onContratClick,
             label = {
-            if (selectedContratsCount == 0) {
-                Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
-                ) {
-                DsfrText(stringResource(R.string.filter_by_type), textStyle = DsfrTextStyle.BodySm)
-                Icon(
-                    painter = painterResource(id = R.drawable.add_circle_24dp),
-                    contentDescription = null,
-                    modifier = Modifier.size(DSFRTheme.spacing.md)
-                )
+                if (selectedContratsCount == 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
+                    ) {
+                        DsfrText(
+                            stringResource(R.string.filter_by_type),
+                            textStyle = DsfrTextStyle.BodySm
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.add_circle_24dp),
+                            contentDescription = null,
+                            modifier = Modifier.size(DSFRTheme.spacing.md)
+                        )
+                    }
+                } else {
+                    DsfrText(
+                        stringResource(R.string.filter_by_type_count, selectedContratsCount),
+                        textStyle = DsfrTextStyle.BodySm
+                    )
                 }
-            } else {
-                DsfrText(stringResource(R.string.filter_by_type_count, selectedContratsCount), textStyle = DsfrTextStyle.BodySm)
-            }
             }
         )
     }
@@ -562,7 +579,7 @@ fun FilterModalBottomSheet(
     onClearAll: () -> Unit
 ) {
     var tempSelectedOptions by remember { mutableStateOf(selectedOptions) }
-    
+
     ModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = onDismissRequest,
@@ -590,7 +607,7 @@ fun FilterModalBottomSheet(
                         text = title,
                         textStyle = DsfrTextStyle.HeadingMd
                     )
-                    
+
                     if (tempSelectedOptions.isNotEmpty()) {
                         DsfrTextButton(onClick = { tempSelectedOptions = emptySet() }) {
                             Text(stringResource(R.string.clear_all))
@@ -619,12 +636,13 @@ fun FilterModalBottomSheet(
                         ) {
                             Checkbox(
                                 checked = tempSelectedOptions.contains(option),
-                                onCheckedChange = { 
-                                    tempSelectedOptions = if (tempSelectedOptions.contains(option)) {
-                                        tempSelectedOptions - option
-                                    } else {
-                                        tempSelectedOptions + option
-                                    }
+                                onCheckedChange = {
+                                    tempSelectedOptions =
+                                        if (tempSelectedOptions.contains(option)) {
+                                            tempSelectedOptions - option
+                                        } else {
+                                            tempSelectedOptions + option
+                                        }
                                 },
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = DSFRTheme.colors.actionHigh,
@@ -639,7 +657,7 @@ fun FilterModalBottomSheet(
                     }
                 }
             }
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -657,14 +675,14 @@ fun FilterModalBottomSheet(
                     onClick = {
                         val toRemove = selectedOptions - tempSelectedOptions
                         val toAdd = tempSelectedOptions - selectedOptions
-                        
+
                         toRemove.forEach { onToggleOption(it) }
                         toAdd.forEach { onToggleOption(it) }
-                        
+
                         if (tempSelectedOptions.isEmpty() && selectedOptions.isNotEmpty()) {
                             onClearAll()
                         }
-                        
+
                         onDismissRequest()
                     }
                 ) {

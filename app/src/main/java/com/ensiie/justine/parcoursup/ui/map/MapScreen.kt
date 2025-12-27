@@ -4,8 +4,6 @@ package com.ensiie.justine.parcoursup.ui.map
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -149,7 +147,7 @@ fun MapLibre(
 
     val locationFilter by viewModel.locationFilter.collectAsState()
     val formationsAtClickedLocation by viewModel.clickedFormations.collectAsState()
-    
+
     val locationSheetState = rememberModalBottomSheetState()
     val formationSelectionSheetState = rememberModalBottomSheetState()
     var showLocationModal by remember { mutableStateOf(false) }
@@ -443,7 +441,12 @@ private fun MapContent(
             ClickResult.Pass
         },
         options = MapOptions(
-            ornamentOptions = OrnamentOptions(isLogoEnabled = true, isAttributionEnabled = true, isCompassEnabled = false, isScaleBarEnabled = false),
+            ornamentOptions = OrnamentOptions(
+                isLogoEnabled = true,
+                isAttributionEnabled = true,
+                isCompassEnabled = false,
+                isScaleBarEnabled = false
+            ),
             gestureOptions = GestureOptions(
                 isTiltEnabled = true,
                 isZoomEnabled = true,
@@ -536,8 +539,10 @@ private fun MapContent(
                     if (id != null) {
                         val formation = formations.find { it.id == id }
                         formation?.let { clickedFormation ->
-                            val locationKey = "${clickedFormation.etabGps.lat},${clickedFormation.etabGps.lon}"
-                            val formationsAtLocation = formationsByLocation[locationKey] ?: listOf(clickedFormation)
+                            val locationKey =
+                                "${clickedFormation.etabGps.lat},${clickedFormation.etabGps.lon}"
+                            val formationsAtLocation =
+                                formationsByLocation[locationKey] ?: listOf(clickedFormation)
 
                             if (formationsAtLocation.size > 1) {
                                 onMultipleFormationsClick(formationsAtLocation)

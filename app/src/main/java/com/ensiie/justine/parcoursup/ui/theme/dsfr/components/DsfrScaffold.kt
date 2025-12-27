@@ -34,6 +34,6 @@ fun DsfrScaffold(
         contentColor = contentColor,
         contentWindowInsets = contentWindowInsets,
         content = content
-    ) 
+    )
 }
 

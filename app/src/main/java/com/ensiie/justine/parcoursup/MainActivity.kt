@@ -2,12 +2,10 @@ package com.ensiie.justine.parcoursup
 
 import DsfrScaffold
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
@@ -18,15 +16,25 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.with
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.ensiie.justine.parcoursup.R
-import com.ensiie.justine.parcoursup.navigation.*
+import com.ensiie.justine.parcoursup.navigation.Favorites
+import com.ensiie.justine.parcoursup.navigation.FormationDetail
+import com.ensiie.justine.parcoursup.navigation.FormationsList
+import com.ensiie.justine.parcoursup.navigation.GlobalMap
+import com.ensiie.justine.parcoursup.navigation.Navigator
+import com.ensiie.justine.parcoursup.navigation.TopLevelDestination
+import com.ensiie.justine.parcoursup.navigation.rememberNavigationState
+import com.ensiie.justine.parcoursup.navigation.toEntries
 import com.ensiie.justine.parcoursup.ui.detail.FormationDetailScreen
 import com.ensiie.justine.parcoursup.ui.favorites.FavoritesScreen
 import com.ensiie.justine.parcoursup.ui.formations.FormationsScreen
@@ -148,7 +156,7 @@ fun ParcoursupApp() {
         val routeIndexMap = TopLevelDestination.entries
             .mapIndexed { index, destination -> destination.route.toString() to index }
             .toMap()
-        
+
         NavDisplay(
             entries = navigationState.toEntries(entryProvider),
             onBack = { navigator.goBack() },
@@ -156,10 +164,10 @@ fun ParcoursupApp() {
             transitionSpec = {
                 val fromRoute = initialState.key.toString()
                 val toRoute = targetState.key.toString()
-                
+
                 val fromIndex = routeIndexMap[fromRoute] ?: -1
                 val toIndex = routeIndexMap[toRoute] ?: -1
-                
+
                 if (fromIndex != -1 && toIndex != -1) {
                     if (toIndex > fromIndex) {
                         slideInHorizontally(

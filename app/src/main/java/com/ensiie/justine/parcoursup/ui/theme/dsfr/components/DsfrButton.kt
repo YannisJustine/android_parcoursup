@@ -46,7 +46,7 @@ fun DsfrButton(
         DsfrButtonSize.Medium -> PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         DsfrButtonSize.Large -> PaddingValues(horizontal = 24.dp, vertical = 12.dp)
     }
-    
+
     Button(
         onClick = onClick,
         modifier = modifier,
@@ -98,13 +98,13 @@ fun DsfrTextButton(
     content: @Composable RowScope.() -> Unit
 ) {
     val dsfrColors = DSFRTheme.colors
-    
+
     val defaultColors = ButtonDefaults.textButtonColors(
         containerColor = if (selected) dsfrColors.backgroundActionLow else dsfrColors.backgroundAlt,
         contentColor = dsfrColors.actionHigh,
         disabledContentColor = dsfrColors.textDisabled
     )
-    
+
     TextButton(
         onClick = onClick,
         modifier = modifier,

@@ -68,4 +68,6 @@
     <string name="filter_by_filiere">Filtrer par filière</string>
     <string name="filter_by_type">Filtrer par type</string>
     <string name="filter_by_type_count">Filtrer par type (%1$d)</string>
+
+    <string name="scroll_to_top">Retour en haut</string>
 </resources>

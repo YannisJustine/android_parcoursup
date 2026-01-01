@@ -25,10 +25,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -79,6 +81,7 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 import com.ensiie.justine.parcoursup.utils.LocationFilter
 import com.ensiie.justine.parcoursup.utils.LocationHelper
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -99,144 +102,169 @@ fun FormationsScreen(
     val locationFilter by viewModel.locationFilter.collectAsState()
     val filterSheetState = rememberModalBottomSheetState()
     val locationSheetState = rememberModalBottomSheetState()
-    rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val showScrollToTop by remember {
+        snapshotFlow { listState.firstVisibleItemIndex > 2 }
+    }.collectAsState(initial = false)
 
     var filterType by remember { mutableStateOf<FilterType?>(null) }
     var showLocationModal by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = viewModel::searchFormations,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = DSFRTheme.spacing.md, vertical = DSFRTheme.spacing.sm)
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = viewModel::searchFormations,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = DSFRTheme.spacing.md, vertical = DSFRTheme.spacing.sm)
+            )
 
-        LocationFilterCard(
-            locationFilter = locationFilter,
-            onClick = { showLocationModal = true },
-            onClear = { viewModel.clearLocationFilter() },
-            modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
-        )
+            LocationFilterCard(
+                locationFilter = locationFilter,
+                onClick = { showLocationModal = true },
+                onClear = { viewModel.clearLocationFilter() },
+                modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
+            )
 
-        FilterTagsRow(
-            selectedFilieresCount = selectedFilieres.size,
-            selectedContratsCount = selectedTypesEtab.size,
-            onFiliereClick = { filterType = FilterType.FILIERE },
-            onContratClick = { filterType = FilterType.CONTRAT },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = DSFRTheme.spacing.md, vertical = DSFRTheme.spacing.sm)
-        )
+            FilterTagsRow(
+                selectedFilieresCount = selectedFilieres.size,
+                selectedContratsCount = selectedTypesEtab.size,
+                onFiliereClick = { filterType = FilterType.FILIERE },
+                onContratClick = { filterType = FilterType.CONTRAT },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = DSFRTheme.spacing.md, vertical = DSFRTheme.spacing.sm)
+            )
 
-        when (val state = uiState) {
-            is FormationsUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    DsfrCircularProgressIndicator()
-                }
-            }
-
-            is FormationsUiState.Success -> {
-                val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-                val isRefreshing by viewModel.isRefreshing.collectAsState()
-                val pullToRefreshState = rememberPullToRefreshState()
-                val listState = rememberLazyListState()
-
-                LaunchedEffect(Unit) {
-                    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-                        .map { visibleItems ->
-                            val lastVisibleItemIndex = visibleItems.lastOrNull()?.index ?: -1
-                            val totalItems = listState.layoutInfo.totalItemsCount
-                            Pair(lastVisibleItemIndex, totalItems)
-                        }
-                        .collect { (lastVisibleItemIndex, totalItems) ->
-                            if (state.formations.isEmpty() || isLoadingMore) {
-                                return@collect
-                            }
-
-                            if (lastVisibleItemIndex >= totalItems - 1) {
-                                viewModel.loadMoreFormations()
-                            }
-                        }
-                }
-
-                PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = { viewModel.refresh() },
-                    state = pullToRefreshState,
-                    indicator = {
-                        Indicator(
-                            modifier = Modifier.align(Alignment.TopCenter),
-                            isRefreshing = isRefreshing,
-                            containerColor = DSFRTheme.colors.backgroundDefault,
-                            color = DSFRTheme.colors.actionHigh,
-                            state = pullToRefreshState
-                        )
+            when (val state = uiState) {
+                is FormationsUiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        DsfrCircularProgressIndicator()
                     }
-                ) {
-                    if (state.formations.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            DsfrText(
-                                text = stringResource(R.string.no_formations_found),
-                                textStyle = DsfrTextStyle.BodyMd,
-                                color = DsfrTextColor.Label
+                }
+
+                is FormationsUiState.Success -> {
+                    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+                    val isRefreshing by viewModel.isRefreshing.collectAsState()
+                    val pullToRefreshState = rememberPullToRefreshState()
+
+                    LaunchedEffect(Unit) {
+                        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+                            .map { visibleItems ->
+                                val lastVisibleItemIndex = visibleItems.lastOrNull()?.index ?: -1
+                                val totalItems = listState.layoutInfo.totalItemsCount
+                                Pair(lastVisibleItemIndex, totalItems)
+                            }
+                            .collect { (lastVisibleItemIndex, totalItems) ->
+                                if (state.formations.isEmpty() || isLoadingMore) {
+                                    return@collect
+                                }
+
+                                if (lastVisibleItemIndex >= totalItems - 1) {
+                                    viewModel.loadMoreFormations()
+                                }
+                            }
+                    }
+
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        state = pullToRefreshState,
+                        indicator = {
+                            Indicator(
+                                modifier = Modifier.align(Alignment.TopCenter),
+                                isRefreshing = isRefreshing,
+                                containerColor = DSFRTheme.colors.backgroundDefault,
+                                color = DSFRTheme.colors.actionHigh,
+                                state = pullToRefreshState
                             )
                         }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(DSFRTheme.spacing.md),
-                            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
-                            state = listState
-                        ) {
-                            items(state.formations, key = { it.id }) { formation ->
-                                FormationCard(
-                                    formation = formation,
-                                    onClick = { onNavigateToDetail(formation.id) },
-                                    onFavoriteClick = { viewModel.toggleFavorite(formation) },
-                                    isFavorite = viewModel.isFavorite(formation.id)
-                                        .collectAsState(initial = false).value
+                    ) {
+                        if (state.formations.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                DsfrText(
+                                    text = stringResource(R.string.no_formations_found),
+                                    textStyle = DsfrTextStyle.BodyMd,
+                                    color = DsfrTextColor.Label
                                 )
                             }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(DSFRTheme.spacing.md),
+                                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
+                                state = listState
+                            ) {
+                                items(state.formations, key = { it.id }) { formation ->
+                                    FormationCard(
+                                        formation = formation,
+                                        onClick = { onNavigateToDetail(formation.id) },
+                                        onFavoriteClick = { viewModel.toggleFavorite(formation) },
+                                        isFavorite = viewModel.isFavorite(formation.id)
+                                            .collectAsState(initial = false).value
+                                    )
+                                }
 
-                            if (isLoadingMore) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(DSFRTheme.spacing.md),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        DsfrCircularProgressIndicator()
+                                if (isLoadingMore) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(DSFRTheme.spacing.md),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            DsfrCircularProgressIndicator()
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            is FormationsUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                is FormationsUiState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
+            }
+        }
+
+        if (showScrollToTop && uiState is FormationsUiState.Success) {
+            FloatingActionButton(
+                onClick = {
+                    coroutineScope.launch {
+                        listState.animateScrollToItem(0)
+                    }
+                },
+                containerColor = DSFRTheme.colors.actionHigh,
+                contentColor = DSFRTheme.colors.backgroundDefault,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(DSFRTheme.spacing.lg)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = stringResource(R.string.scroll_to_top)
+                )
             }
         }
     }

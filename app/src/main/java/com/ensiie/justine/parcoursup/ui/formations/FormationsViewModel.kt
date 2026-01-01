@@ -45,10 +45,9 @@ class FormationsViewModel(
 
     private var currentOffset = 0
     private var canLoadMore = true
-    private var isSearchMode = false
 
     init {
-        loadFormations()
+        searchFormations()
         loadFilieres()
         loadContratsEtab()
         observeFilterChanges()
@@ -73,26 +72,19 @@ class FormationsViewModel(
         viewModelScope.launch {
             sharedFilterViewModel.filterState.collect { filterState ->
                 // Reload formations when filters change
-                if (filterState.searchQuery.isNotBlank()) {
-                    searchFormations(filterState.searchQuery)
-                } else {
-                    loadFormations(filterState.selectedFilieres, filterState.selectedTypesEtab)
-                }
+                searchFormations(filterState.searchQuery)
             }
         }
     }
 
-    fun loadFormations(
-        filieres: Set<String> = emptySet(),
-        contratsEtab: Set<String> = emptySet(),
-        append: Boolean = false
-    ) {
+    fun searchFormations(query: String = "", append: Boolean = false) {
+        sharedFilterViewModel.setSearchQuery(query)
+
         viewModelScope.launch {
             if (!append) {
                 _uiState.value = FormationsUiState.Loading
                 currentOffset = 0
                 canLoadMore = true
-                isSearchMode = false
             } else if (!canLoadMore || _isLoadingMore.value) {
                 return@launch
             }
@@ -101,9 +93,9 @@ class FormationsViewModel(
 
             val location = locationFilter.value
             repository.searchFormations(
-                name = null,
-                filieres = filieres,
-                contratsEtab = contratsEtab,
+                name = query.ifBlank { null },
+                filieres = selectedFilieres.value,
+                contratsEtab = selectedTypesEtab.value,
                 latitude = location?.latitude,
                 longitude = location?.longitude,
                 radiusKm = location?.radiusKm,
@@ -120,6 +112,7 @@ class FormationsViewModel(
                     } else {
                         formations
                     }
+
                     _uiState.value = FormationsUiState.Success(
                         formations = allFormations,
                     )
@@ -148,74 +141,8 @@ class FormationsViewModel(
         }
     }
 
-    fun searchFormations(query: String, append: Boolean = false) {
-        sharedFilterViewModel.setSearchQuery(query)
-
-        if (query.isBlank()) {
-            loadFormations(selectedFilieres.value, contratsEtab = selectedTypesEtab.value)
-            return
-        }
-
-        viewModelScope.launch {
-            if (!append) {
-                _uiState.value = FormationsUiState.Loading
-                currentOffset = 0
-                canLoadMore = true
-                isSearchMode = true
-            } else if (!canLoadMore || _isLoadingMore.value) {
-                return@launch
-            }
-
-            if (append) _isLoadingMore.value = true
-
-            val location = locationFilter.value
-            repository.searchFormations(
-                name = query,
-                filieres = selectedFilieres.value,
-                contratsEtab = selectedTypesEtab.value,
-                latitude = location?.latitude,
-                longitude = location?.longitude,
-                radiusKm = location?.radiusKm,
-                offset = currentOffset,
-                limit = 50
-            )
-                .onSuccess { formations ->
-                    canLoadMore = formations.size >= 50
-                    currentOffset += formations.size
-
-                    val currentState = _uiState.value
-                    val allFormations = if (append && currentState is FormationsUiState.Success) {
-                        currentState.formations + formations
-                    } else {
-                        formations
-                    }
-
-                    _uiState.value = FormationsUiState.Success(
-                        formations = allFormations,
-                    )
-                    _isLoadingMore.value = false
-                }
-                .onFailure { error ->
-                    if (!append) {
-                        _uiState.value = FormationsUiState.Error(
-                            error.message ?: "Unknown error"
-                        )
-                    }
-                    _isLoadingMore.value = false
-                }
-        }
-    }
-
     fun loadMoreFormations() {
-        if (isSearchMode && searchQuery.value.isNotBlank()) {
-            searchFormations(searchQuery.value, append = true)
-        } else {
-            loadFormations(
-                selectedFilieres.value,
-                contratsEtab = selectedTypesEtab.value,
-                append = true
-            )
-        }
+        searchFormations(searchQuery.value, append = true)
     }
 
     fun toggleFiliere(filiere: String) {
@@ -258,35 +185,13 @@ class FormationsViewModel(
     fun isFavorite(id: String): Flow<Boolean> =
         repository.isFavorite(id)
 
+
     fun refresh() {
-        viewModelScope.launch {
-            _isRefreshing.value = true
-            currentOffset = 0
-            canLoadMore = true
-
-            fun refresh() {
-                viewModelScope.launch {
-                    _isRefreshing.value = true
-                    currentOffset = 0
-                    canLoadMore = true
-
-                    if (isSearchMode && searchQuery.value.isNotBlank()) {
-                        searchFormations(searchQuery.value, append = false)
-                    } else {
-                        loadFormations(
-                            selectedFilieres.value,
-                            contratsEtab = selectedTypesEtab.value,
-                            append = false
-                        )
-                    }
-
-                    _isRefreshing.value = false
-                }
-            }
-        }
+        _isRefreshing.value = true
+        searchFormations(searchQuery.value, append = false)
+        _isRefreshing.value = false
     }
 }
-
 sealed interface FormationsUiState {
     data object Loading : FormationsUiState
     data class Success(

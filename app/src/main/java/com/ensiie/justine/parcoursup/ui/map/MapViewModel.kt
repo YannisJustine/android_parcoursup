@@ -1,6 +1,5 @@
 package com.ensiie.justine.parcoursup.ui.map
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ensiie.justine.parcoursup.data.model.FormationMap

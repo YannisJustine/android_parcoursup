@@ -45,7 +45,6 @@ import com.ensiie.justine.parcoursup.data.model.FormationMap
 import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.ui.filters.LocationFilterCard
 import com.ensiie.justine.parcoursup.ui.filters.LocationSearchModal
-import com.ensiie.justine.parcoursup.ui.filters.rememberLocationSearchState
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
@@ -141,7 +140,7 @@ fun MapLibre(
     adresseRepository: AdresseRepository
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
+    LocalContext.current
 
     val locationFilter by viewModel.locationFilter.collectAsState()
     val formationsAtClickedLocation by viewModel.clickedFormations.collectAsState()

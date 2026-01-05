@@ -197,6 +197,7 @@ class FormationsViewModel(
         _isRefreshing.value = false
     }
 }
+
 sealed interface FormationsUiState {
     data object Loading : FormationsUiState
     data class Success(

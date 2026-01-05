@@ -1,6 +1,5 @@
 package com.ensiie.justine.parcoursup.ui.formations
 
-import android.R.attr.radius
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -62,7 +61,6 @@ import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.ui.filters.LocationFilterCard
 import com.ensiie.justine.parcoursup.ui.filters.LocationSearchModal
-import com.ensiie.justine.parcoursup.ui.filters.rememberLocationSearchState
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButton
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButtonType
@@ -109,7 +107,7 @@ fun FormationsScreen(
 
     var filterType by remember { mutableStateOf<FilterType?>(null) }
     var showLocationModal by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    LocalContext.current
 
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -36,13 +36,12 @@ class FormationDetailViewModel(
             repository.getFormationById(recordId)
                 .onSuccess { formation ->
                     println("Formation trouvée: $formation")
-                    etablissementRepository.getEtablissementContactInfo(formation.etabUai)
+                    etablissementRepository.getEtablissementContactInfo(formation.etablissementUai)
                         .onSuccess { etablissementInfo ->
                             // Load similar formations
                             val coords = formation.coordonnees
                             repository.getSimilarFormations(
                                 currentFormationId = formation.id,
-                                filiere = formation.filiereString,
                                 latitude = coords?.getOrNull(0),
                                 longitude = coords?.getOrNull(1),
                                 limit = 5

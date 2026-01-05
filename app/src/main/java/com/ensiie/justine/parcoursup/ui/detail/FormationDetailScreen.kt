@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,17 +37,12 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -60,7 +54,6 @@ import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.EtablissementContactInfo
 import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
-import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButton
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrLinearProgressIndicator
@@ -206,14 +199,10 @@ fun FormationDetailContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var isScrollEnabled by remember { mutableStateOf(true) }
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(
-                enabled = isScrollEnabled,
-                state = rememberScrollState()
-            )
+            .verticalScroll(state = rememberScrollState())
             .padding(DSFRTheme.spacing.md),
         verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.md),
     ) {
@@ -246,7 +235,7 @@ fun FormationDetailContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     DsfrTag(
-                        text = formation.filiereString ?: "",
+                        text = formation.filiere ?: "",
                         type = DsfrTagType.Primary,
                         size = DsfrTagSize.Small
                     )
@@ -394,13 +383,13 @@ fun FormationDetailContent(
                         ) {
                             ProgressRow(
                                 label = stringResource(R.string.women),
-                                percentage = formation.pctFemmes ?: 0.0,
-                                count = formation.accFemmes ?: 0
+                                percentage = formation.pourcentageFemmes ?: 0.0,
+                                count = formation.admisFemmes ?: 0
                             )
                             ProgressRow(
                                 label = stringResource(R.string.men),
-                                percentage = 100 - (formation.pctFemmes ?: 0.0),
-                                count = (formation.admis ?: 0) - (formation.accFemmes ?: 0)
+                                percentage = 100 - (formation.pourcentageFemmes ?: 0.0),
+                                count = (formation.admis ?: 0) - (formation.admisFemmes ?: 0)
                             )
                         }
                     }
@@ -412,18 +401,18 @@ fun FormationDetailContent(
                         ) {
                             ProgressRow(
                                 label = stringResource(R.string.bac_general),
-                                percentage = formation.pctBacGeneral ?: 0.0,
-                                count = formation.accBacGeneral ?: 0
+                                percentage = formation.pourcentageGenerale ?: 0.0,
+                                count = formation.admisGenerale ?: 0
                             )
                             ProgressRow(
                                 label = stringResource(R.string.bac_tech),
-                                percentage = formation.pctBacTech ?: 0.0,
-                                count = formation.accBacTech ?: 0
+                                percentage = formation.pourcentageTechnologique ?: 0.0,
+                                count = formation.admisTechnologique ?: 0
                             )
                             ProgressRow(
                                 label = stringResource(R.string.bac_pro),
-                                percentage = formation.pctBacPro ?: 0.0,
-                                count = formation.accBacPro ?: 0
+                                percentage = formation.pourcentageProfessionnel ?: 0.0,
+                                count = formation.admisProfessionnel ?: 0
                             )
                         }
                     }
@@ -456,6 +445,30 @@ fun FormationDetailContent(
             }
         }
 
+        if (similarFormations.isNotEmpty()) {
+            DsfrText(
+                text = stringResource(R.string.similar_formations),
+                textStyle = DsfrTextStyle.HeadingMd
+            )
+
+            val similarPagerState =
+                rememberPagerState(pageCount = { similarFormations.take(5).size })
+
+            HorizontalPager(
+                state = similarPagerState,
+                modifier = Modifier.fillMaxWidth(),
+                pageSpacing = DSFRTheme.spacing.sm,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = DSFRTheme.spacing.md),
+                beyondViewportPageCount = 1
+            ) { page ->
+                val similarFormation = similarFormations[page]
+                SimilarFormationCard(
+                    formation = similarFormation,
+                    onClick = { onSimilarFormationClick(similarFormation.id) }
+                )
+            }
+        }
+
         val coords = formation.coordonnees
         if (coords != null && coords.size >= 2) {
             DsfrText(
@@ -471,9 +484,6 @@ fun FormationDetailContent(
                     latitude = coords[0],
                     longitude = coords[1],
                     etablissement = formation.etablissement ?: "",
-                    onMapInteraction = { isInteracting ->
-                        isScrollEnabled = !isInteracting
-                    },
                     onMarkerClick = {
                         val latitude = coords[0]
                         val longitude = coords[1]
@@ -486,26 +496,6 @@ fun FormationDetailContent(
                 )
             }
         }
-
-        // Similar formations section
-        if (similarFormations.isNotEmpty()) {
-            DsfrText(
-                text = stringResource(R.string.similar_formations),
-                textStyle = DsfrTextStyle.HeadingMd
-            )
-            
-            Column(
-                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
-            ) {
-                similarFormations.take(5).forEach { similarFormation ->
-                    SimilarFormationCard(
-                        formation = similarFormation,
-                        onClick = { onSimilarFormationClick(similarFormation.id) }
-                    )
-                }
-            }
-        }
-
     }
 }
 
@@ -577,45 +567,20 @@ fun FormationMap(
     latitude: Double,
     longitude: Double,
     etablissement: String,
-    onMapInteraction: (Boolean) -> Unit = {},
     onMarkerClick: () -> Unit = {}
 ) {
     val cameraState = rememberCameraState(
         CameraPosition(target = Position(longitude, latitude), zoom = 15.0)
     )
     val marker = painterResource(R.drawable.marker)
-    var isInteracting by remember { mutableStateOf(false) }
     LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(isInteracting) {
-        onMapInteraction(isInteracting)
-    }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-
+        modifier = Modifier.fillMaxSize()
     ) {
         MaplibreMap(
             baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    // https://github.com/maplibre/maplibre-compose/issues/726#issuecomment-3620016105
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            isInteracting = when (event.type) {
-                                PointerEventType.Press,
-                                PointerEventType.Move,
-                                PointerEventType.Scroll -> true
-
-                                else -> false
-                            }
-                        }
-                    }
-                },
+            modifier = Modifier.fillMaxSize(),
             cameraState = cameraState,
             styleState = rememberStyleState(),
             onMapClick = { point, screenPoint ->
@@ -626,10 +591,10 @@ fun FormationMap(
                     ornamentOptions = OrnamentOptions.AllDisabled,
                     gestureOptions =
                         GestureOptions(
-                            isTiltEnabled = true,
-                            isZoomEnabled = true,
-                            isRotateEnabled = true,
-                            isScrollEnabled = true,
+                            isTiltEnabled = false,
+                            isZoomEnabled = false,
+                            isRotateEnabled = false,
+                            isScrollEnabled = false,
                         ),
                 ),
         ) {
@@ -659,23 +624,6 @@ fun FormationMap(
                     return@SymbolLayer ClickResult.Consume
                 }
             )
-        }
-        DsfrButton(
-            onClick = {
-                coroutineScope.launch {
-                    cameraState.animateTo(
-                        cameraState.position.copy(
-                            target = Position(longitude, latitude),
-                            zoom = 15.0,
-                        )
-                    )
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(DSFRTheme.spacing.sm)
-        ) {
-            DsfrText("Recentrer")
         }
     }
 }

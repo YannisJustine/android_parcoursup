@@ -110,8 +110,7 @@ fun ParcoursupApp() {
             AnimatedContent(
                 targetState = showBottomBar,
                 transitionSpec = {
-                    slideInVertically { height -> height } with
-                            slideOutVertically { height -> height }
+                    slideInVertically { height -> height } togetherWith(slideOutVertically { height -> height })
                 }
             ) { isVisible ->
                 if (isVisible) {

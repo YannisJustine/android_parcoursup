@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -39,8 +38,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,7 +77,7 @@ class LocationSearchState(
 @Composable
 fun rememberLocationSearchState(): LocationSearchState {
     val state = remember { LocationSearchState() }
-    
+
     return state
 }
 
@@ -195,7 +192,8 @@ fun LocationSearchModal(
                 },
                 onGetCurrentLocationFailed = { exception ->
                     isLoadingLocation = false
-                    locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                    locationError =
+                        exception.message ?: "Erreur lors de la récupération de votre position"
                 }
             )
         } else {
@@ -243,7 +241,7 @@ fun LocationSearchModal(
                 )
 
                 DsfrButton(
-                    onClick = { 
+                    onClick = {
                         if (savedCurrentLocation != null) {
                             sharedFilterViewModel.clearPendingCurrentLocation()
                             locationError = null
@@ -252,12 +250,18 @@ fun LocationSearchModal(
                             locationError = null
                             locationHelper.getCurrentLocation(
                                 onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                                    sharedFilterViewModel.setPendingCurrentLocation(Pair(latitude, longitude))
+                                    sharedFilterViewModel.setPendingCurrentLocation(
+                                        Pair(
+                                            latitude,
+                                            longitude
+                                        )
+                                    )
                                     isLoadingLocation = false
                                 },
                                 onGetCurrentLocationFailed = { exception ->
                                     isLoadingLocation = false
-                                    locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                                    locationError = exception.message
+                                        ?: "Erreur lors de la récupération de votre position"
                                 }
                             )
                         } else {

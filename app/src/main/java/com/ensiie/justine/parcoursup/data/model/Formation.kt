@@ -8,39 +8,39 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class Formation(
     @Json(name = "cod_aff_form") val id: String,
-    @Json(name = "cod_uai") val etabUai: String,
+    @Json(name = "cod_uai") val etablissementUai: String,
     @Json(name = "g_ea_lib_vx") val etablissement: String?,
     @Json(name = "ville_etab") val ville: String?,
     @Json(name = "dep_lib") val departement: String?,
-    @Json(name = "fili") val filiereString: String?,
-    @Json(name = "form_lib_voe_acc") val formationLibString: String?,
-    @Json(name = "fil_lib_voe_acc") val filiDetailString: String?,
+    @Json(name = "fili") val filiere: String?,
+    @Json(name = "form_lib_voe_acc") val formationLibelle: String?,
+    @Json(name = "fil_lib_voe_acc") val filiereDetail: String?,
     @Json(name = "lib_for_voe_ins") val formationComplete: String?,
     @Json(name = "detail_forma") val formationDetail: String?,
-    @Json(name = "select_form") val selectForm: String?,
-    @Json(name = "g_olocalisation_des_formations") val etabGps: Coordonnees?,
+    @Json(name = "select_form") val selectivite: String?,
+    @Json(name = "g_olocalisation_des_formations") val coordonneesEtablissement: Coordonnees?,
     @Json(name = "session") val session: String?,
     @Json(name = "capa_fin") val capacite: Int?,
     @Json(name = "voe_tot") val voeux: Int?,
     @Json(name = "acc_tot") val admis: Int?,
     @Json(name = "taux_acces_ens") val tauxAcces: Double?,
-    @Json(name = "acc_mention_nonrenseignee") val mentionNonRenseigne: Int?,
+    @Json(name = "acc_mention_nonrenseignee") val mentionNonRenseignee: Int?,
     @Json(name = "acc_sansmention") val mentionSans: Int?,
     @Json(name = "acc_ab") val mentionAB: Int?,
     @Json(name = "acc_b") val mentionB: Int?,
     @Json(name = "acc_tb") val mentionTB: Int?,
     @Json(name = "acc_tbf") val mentionTBF: Double?,
-    @Json(name = "acc_bg") val accBacGeneral: Int?,
-    @Json(name = "acc_bt") val accBacTech: Int?,
-    @Json(name = "acc_bp") val accBacPro: Int?,
-    @Json(name = "pct_bg") val pctBacGeneral: Double?,
-    @Json(name = "pct_bt") val pctBacTech: Double?,
-    @Json(name = "pct_bp") val pctBacPro: Double?,
-    @Json(name = "acc_tot_f") val accFemmes: Int?,
-    @Json(name = "pct_f") val pctFemmes: Double?
+    @Json(name = "acc_bg") val admisGenerale: Int?,
+    @Json(name = "acc_bt") val admisTechnologique: Int?,
+    @Json(name = "acc_bp") val admisProfessionnel: Int?,
+    @Json(name = "pct_bg") val pourcentageGenerale: Double?,
+    @Json(name = "pct_bt") val pourcentageTechnologique: Double?,
+    @Json(name = "pct_bp") val pourcentageProfessionnel: Double?,
+    @Json(name = "acc_tot_f") val admisFemmes: Int?,
+    @Json(name = "pct_f") val pourcentageFemmes: Double?
 ) {
     val coordonnees: List<Double>?
-        get() = etabGps?.let { listOf(it.lat, it.lon) }
+        get() = coordonneesEtablissement?.let { listOf(it.lat, it.lon) }
 }
 
 @JsonClass(generateAdapter = true)
@@ -63,9 +63,3 @@ data class FavoriteFormation(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-data class FormationStats(
-    val nombreEtablissements: Int,
-    val capaciteMoyenne: Double,
-    val tauxAccesMoyen: Double,
-    val moyenneDesMoyennes: Double
-)

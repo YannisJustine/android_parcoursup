@@ -214,35 +214,79 @@ class FormationRepository(
     ): Double {
         var score = 0.0
         
-        // 1. Same filiere: 40 points
-        if (current.filiDetailString == candidate.filiDetailString && !current.filiDetailString.isNullOrBlank()) {
-            score += 10.0
+        // 1. Filiere similarity: up to 30 points
+        // Exact match: 30 points, partial match: proportional
+        if (!current.filiereString.isNullOrBlank() && !candidate.filiereString.isNullOrBlank()) {
+            if (current.filiereString == candidate.filiereString) {
+                score += 30.0
+            } else {
+                // Check for partial word matches in filiere
+                val filiereSimilarity = calculateTextSimilarity(current.filiereString, candidate.filiereString)
+                score += filiereSimilarity * 15.0
+            }
         }
         
-        // 2. Same specialty: 40 points
-        if (current.formationLibString == candidate.formationLibString &&
-            !current.formationLibString.isNullOrBlank()) {
-            score += 10.0
-        }
-
-        if (current.formationComplete == candidate.formationComplete &&
-            !current.formationComplete.isNullOrBlank()) {
-            score += 10.0
-        }
-
-        if(current.formationDetail == candidate.formationDetail && !current.formationDetail.isNullOrBlank()) {
-            score += 10.0
+        // 2. Formation detail similarity: up to 30 points
+        // Compare all formation fields with weighted scores
+        var formationScore = 0.0
+        var formationFields = 0
+        
+        if (!current.filiDetailString.isNullOrBlank() && !candidate.filiDetailString.isNullOrBlank()) {
+            if (current.filiDetailString == candidate.filiDetailString) {
+                formationScore += 10.0
+            } else {
+                formationScore += calculateTextSimilarity(current.filiDetailString, candidate.filiDetailString) * 5.0
+            }
+            formationFields++
         }
         
-        // 3. Partial match on name: up to 30 points based on text similarity
+        if (!current.formationLibString.isNullOrBlank() && !candidate.formationLibString.isNullOrBlank()) {
+            if (current.formationLibString == candidate.formationLibString) {
+                formationScore += 10.0
+            } else {
+                formationScore += calculateTextSimilarity(current.formationLibString, candidate.formationLibString) * 5.0
+            }
+            formationFields++
+        }
+        
+        if (!current.formationComplete.isNullOrBlank() && !candidate.formationComplete.isNullOrBlank()) {
+            if (current.formationComplete == candidate.formationComplete) {
+                formationScore += 10.0
+            } else {
+                formationScore += calculateTextSimilarity(current.formationComplete, candidate.formationComplete) * 5.0
+            }
+            formationFields++
+        }
+        
+        if (!current.formationDetail.isNullOrBlank() && !candidate.formationDetail.isNullOrBlank()) {
+            if (current.formationDetail == candidate.formationDetail) {
+                formationScore += 10.0
+            } else {
+                formationScore += calculateTextSimilarity(current.formationDetail, candidate.formationDetail) * 5.0
+            }
+            formationFields++
+        }
+        
+        // Normalize formation score to max 30 points
+        if (formationFields > 0) {
+            score += kotlin.math.min(30.0, formationScore)
+        }
+        
+        // 3. School name similarity: up to 20 points
         if (!current.etablissement.isNullOrBlank() && !candidate.etablissement.isNullOrBlank()) {
-            val textSimilarity = calculateTextSimilarity(current.etablissement, candidate.etablissement)
-            score += textSimilarity * 20.0
+            if (current.etablissement == candidate.etablissement) {
+                // Same school: 20 points
+                score += 20.0
+            } else {
+                // Similar school name: proportional score
+                val schoolSimilarity = calculateTextSimilarity(current.etablissement, candidate.etablissement)
+                score += schoolSimilarity * 15.0
+            }
         }
 
-        // 4. Same selectivity: 15 points
+        // 4. Same selectivity: 10 points
         if (current.selectForm == candidate.selectForm && !current.selectForm.isNullOrBlank()) {
-            score += 15.0
+            score += 10.0
         }
            
         // 5. Similar access rate (±15%): up to 10 points
@@ -274,16 +318,16 @@ class FormationRepository(
         // 7. Similar bac profile: up to 10 points
         score += calculateBacProfileSimilarity(current, candidate) * 10.0
         
-        // 8. Geographic proximity: up to 40 points
+        // 8. Geographic proximity: up to 20 points
         if (currentLat != null && currentLon != null) {
             val candidateCoords = candidate.coordonnees
             if (candidateCoords != null && candidateCoords.size >= 2) {
                 val distance = calculateDistance(currentLat, currentLon, candidateCoords[0], candidateCoords[1])
                 score += when {
                     distance <= 10 -> 20.0
-                    distance <= 25 -> 10.0
-                    distance <= 50 -> 5.0
-                    distance <= 100 -> 2.50
+                    distance <= 25 -> 15.0
+                    distance <= 50 -> 10.0
+                    distance <= 100 -> 5.0
                     else -> 0.0
                 }
             }

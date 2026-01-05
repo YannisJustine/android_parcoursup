@@ -38,7 +38,28 @@ class FormationDetailViewModel(
                     println("Formation trouvée: $formation")
                     etablissementRepository.getEtablissementContactInfo(formation.etabUai)
                         .onSuccess { etablissementInfo ->
-                            _uiState.value = DetailUiState.Success(formation, etablissementInfo)
+                            // Load similar formations
+                            val coords = formation.coordonnees
+                            repository.getSimilarFormations(
+                                currentFormationId = formation.id,
+                                filiere = formation.filiereString,
+                                latitude = coords?.getOrNull(0),
+                                longitude = coords?.getOrNull(1),
+                                limit = 5
+                            ).onSuccess { similarFormations ->
+                                _uiState.value = DetailUiState.Success(
+                                    formation,
+                                    etablissementInfo,
+                                    similarFormations
+                                )
+                            }.onFailure {
+                                // Even if similar formations fail, show the main formation
+                                _uiState.value = DetailUiState.Success(
+                                    formation,
+                                    etablissementInfo,
+                                    emptyList()
+                                )
+                            }
                         }
                         .onFailure { error ->
                             _uiState.value = DetailUiState.Error(
@@ -78,8 +99,11 @@ class FormationDetailViewModel(
 
 sealed interface DetailUiState {
     data object Loading : DetailUiState
-    data class Success(val formation: Formation, val etablissementInfo: EtablissementContactInfo) :
-        DetailUiState
+    data class Success(
+        val formation: Formation,
+        val etablissementInfo: EtablissementContactInfo,
+        val similarFormations: List<Formation> = emptyList()
+    ) : DetailUiState
 
     data class Error(val message: String) : DetailUiState
 }

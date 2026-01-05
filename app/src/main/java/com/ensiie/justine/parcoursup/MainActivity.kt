@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ParcoursupApp() {
-    var topLevelRoutes = setOf(FormationsList, Favorites, GlobalMap)
+    val topLevelRoutes = setOf(FormationsList, Favorites, GlobalMap)
 
     val navigationState = rememberNavigationState(
         startRoute = FormationsList,
@@ -93,7 +93,10 @@ fun ParcoursupApp() {
         entry<FormationDetail> { detail ->
             FormationDetailScreen(
                 id = detail.id,
-                onNavigateBack = { navigator.goBack() }
+                onNavigateBack = { navigator.goBack() },
+                onNavigateToFormation = { formationId ->
+                    navigator.navigate(FormationDetail(formationId))
+                }
             )
         }
     }

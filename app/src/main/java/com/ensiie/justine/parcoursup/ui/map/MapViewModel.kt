@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 class MapViewModel(
     private val repository: FormationRepository,
     private val adresseRepository: AdresseRepository,
-    private val sharedFilterViewModel: SharedFilterViewModel
+    val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
@@ -51,7 +51,6 @@ class MapViewModel(
 
             repository.getFormationsForMap(location = location)
                 .onSuccess { formations ->
-                    Log.d("MapViewModel", "Formations count: ${formations.size}")
                     _uiState.value = MapUiState.Success(formations)
                 }
                 .onFailure { error ->

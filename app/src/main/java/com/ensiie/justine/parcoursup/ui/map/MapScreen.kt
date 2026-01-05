@@ -1,9 +1,6 @@
 package com.ensiie.justine.parcoursup.ui.map
 
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +45,7 @@ import com.ensiie.justine.parcoursup.data.model.FormationMap
 import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.ui.filters.LocationFilterCard
 import com.ensiie.justine.parcoursup.ui.filters.LocationSearchModal
+import com.ensiie.justine.parcoursup.ui.filters.rememberLocationSearchState
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrText
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
@@ -176,55 +174,9 @@ fun MapLibre(
         )
 
         if (showLocationModal) {
-            var isLoadingLocation by remember { mutableStateOf(false) }
-            var locationError by remember { mutableStateOf<String?>(null) }
-
-            val locationPermissionLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestMultiplePermissions()
-            ) { permissions ->
-                val fineLocationGranted =
-                    permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-                val coarseLocationGranted =
-                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-
-                if (fineLocationGranted || coarseLocationGranted) {
-                    isLoadingLocation = true
-                    locationError = null
-
-                    locationHelper.getCurrentLocation(
-                        onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                            viewModel.setLocationFilter(
-                                LocationFilter(
-                                    latitude = latitude,
-                                    longitude = longitude,
-                                    radiusKm = 10,
-                                    cityName = null
-                                )
-                            )
-                            showLocationModal = false
-                            isLoadingLocation = false
-                        },
-                        onGetCurrentLocationFailed = { exception ->
-                            isLoadingLocation = false
-                            locationError = exception.message
-                                ?: "Erreur lors de la récupération de votre position"
-                        }
-                    )
-                } else {
-                    val intent = android.content.Intent(
-                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        android.net.Uri.fromParts("package", context.packageName, null)
-                    )
-                    context.startActivity(intent)
-                }
-            }
-
             LocationSearchModal(
                 locationSheetState = locationSheetState,
-                onDismiss = {
-                    showLocationModal = false
-                    locationError = null
-                },
+                onDismiss = { showLocationModal = false },
                 onLocationSelected = { selectedCity, radius ->
                     viewModel.setLocationFilter(
                         LocationFilter(
@@ -236,41 +188,20 @@ fun MapLibre(
                     )
                     showLocationModal = false
                 },
-                onUseCurrentLocation = { radius ->
-                    if (locationHelper.areLocationPermissionsGranted()) {
-                        isLoadingLocation = true
-                        locationError = null
-                        locationHelper.getCurrentLocation(
-                            onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                                viewModel.setLocationFilter(
-                                    LocationFilter(
-                                        latitude = latitude,
-                                        longitude = longitude,
-                                        radiusKm = radius,
-                                        cityName = null
-                                    )
-                                )
-                                showLocationModal = false
-                                isLoadingLocation = false
-                            },
-                            onGetCurrentLocationFailed = { exception ->
-                                isLoadingLocation = false
-                                locationError = exception.message
-                                    ?: "Erreur lors de la récupération de votre position"
-                            }
+                onCurrentLocationSelected = { latitude, longitude, radius ->
+                    viewModel.setLocationFilter(
+                        LocationFilter(
+                            latitude = latitude,
+                            longitude = longitude,
+                            radiusKm = radius,
+                            cityName = null
                         )
-                    } else {
-                        locationPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
-                            )
-                        )
-                    }
+                    )
+                    showLocationModal = false
                 },
                 searchCities = { query -> adresseRepository.searchCities(query) },
-                isLoadingLocation = isLoadingLocation,
-                locationError = locationError,
+                locationHelper = locationHelper,
+                sharedFilterViewModel = viewModel.sharedFilterViewModel,
                 initialRadius = locationFilter?.radiusKm ?: 10,
                 initialCity = locationFilter?.let {
                     if (it.cityName != null) {
@@ -388,7 +319,7 @@ private fun FormationItem(
                     color = DsfrTextColor.Title
                 )
                 DsfrText(
-                    text = formation.formationDetailleeString ?: "Formation inconnue",
+                    text = formation.filiDetailString ?: "Formation inconnue",
                     textStyle = DsfrTextStyle.BodyMd,
                     color = DsfrTextColor.Mention,
                     modifier = Modifier.padding(top = DSFRTheme.spacing.xs)
@@ -425,8 +356,16 @@ private fun MapContent(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val markerIcon = painterResource(R.drawable.marker)
-    val parisCoordinates = doubleArrayOf(48.856614, 2.3522219)
-    val (centerLat, centerLon, initialZoom) = Triple(parisCoordinates[0], parisCoordinates[1], 10.0)
+    val (centerLat, centerLon, initialZoom) =
+        if (locationFilter == null) {
+            Triple(48.856614, 2.3522219, 10.0)
+        } else {
+            Triple(
+                locationFilter.latitude,
+                locationFilter.longitude,
+                12.0
+            )
+        }
 
     val cameraState = rememberCameraState(
         CameraPosition(target = Position(centerLon, centerLat), zoom = initialZoom)

@@ -8,11 +8,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -102,6 +104,7 @@ import org.maplibre.spatialk.geojson.toJson
 fun FormationDetailScreen(
     id: String,
     onNavigateBack: () -> Unit,
+    onNavigateToFormation: (String) -> Unit = {},
     viewModel: FormationDetailViewModel = koinViewModel(key = id) { parametersOf(id) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -162,6 +165,10 @@ fun FormationDetailScreen(
                 FormationDetailContent(
                     formation = state.formation,
                     etablissementInfo = state.etablissementInfo,
+                    similarFormations = state.similarFormations,
+                    onSimilarFormationClick = { formationId ->
+                        onNavigateToFormation(formationId)
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -194,6 +201,8 @@ fun FormationDetailScreen(
 fun FormationDetailContent(
     formation: Formation,
     etablissementInfo: EtablissementContactInfo,
+    similarFormations: List<Formation> = emptyList(),
+    onSimilarFormationClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -221,8 +230,7 @@ fun FormationDetailContent(
                     textStyle = DsfrTextStyle.HeadingXl
                 )
                 DsfrText(
-                    text = formation.formationDetailleeString
-                        ?: formation.formationLibString
+                    text = formation.formationComplete
                         ?: stringResource(R.string.formation),
                     textStyle = DsfrTextStyle.HeadingMd,
                 )
@@ -479,6 +487,25 @@ fun FormationDetailContent(
             }
         }
 
+        // Similar formations section
+        if (similarFormations.isNotEmpty()) {
+            DsfrText(
+                text = stringResource(R.string.similar_formations),
+                textStyle = DsfrTextStyle.HeadingMd
+            )
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
+            ) {
+                similarFormations.take(5).forEach { similarFormation ->
+                    SimilarFormationCard(
+                        formation = similarFormation,
+                        onClick = { onSimilarFormationClick(similarFormation.id) }
+                    )
+                }
+            }
+        }
+
     }
 }
 
@@ -686,5 +713,60 @@ fun ContactButton(
             tint = DSFRTheme.colors.actionHigh,
             modifier = Modifier.size(24.dp)
         )
+    }
+}
+
+@Composable
+fun SimilarFormationCard(
+    formation: Formation,
+    onClick: () -> Unit
+) {
+    DsfrCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(DSFRTheme.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.xs)
+        ) {
+            DsfrText(
+                text = formation.etablissement
+                    ?: stringResource(R.string.establishment_unknown),
+                textStyle = DsfrTextStyle.HeadingMd
+            )
+            DsfrText(
+                text = formation.formationComplete
+                    ?: stringResource(R.string.formation),
+                textStyle = DsfrTextStyle.BodySm,
+                color = DsfrTextColor.Mention
+            )
+            DsfrText(
+                text = "${formation.ville ?: ""} - ${formation.departement ?: ""}",
+                textStyle = DsfrTextStyle.BodyXs,
+                color = DsfrTextColor.Label
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
+            ) {
+                formation.capacite?.let {
+                    DsfrTag(
+                        stringResource(R.string.capacity) + ": $it",
+                        type = DsfrTagType.Primary,
+                        size = DsfrTagSize.Small
+                    )
+                }
+                formation.tauxAcces?.let {
+                    DsfrTag(
+                        stringResource(R.string.access_format, it),
+                        type = DsfrTagType.Primary,
+                        size = DsfrTagSize.Small
+                    )
+                }
+            }
+        }
     }
 }

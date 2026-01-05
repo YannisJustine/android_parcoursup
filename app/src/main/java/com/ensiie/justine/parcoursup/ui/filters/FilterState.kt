@@ -10,7 +10,8 @@ data class FilterState(
     val locationFilter: LocationFilter? = null,
     val selectedFilieres: Set<String> = emptySet(),
     val selectedTypesEtab: Set<String> = emptySet(),
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val pendingCurrentLocation: Pair<Double, Double>? = null
 ) {
     /**
      * Check if any filters are currently active

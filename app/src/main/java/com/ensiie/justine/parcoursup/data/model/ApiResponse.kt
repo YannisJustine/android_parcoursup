@@ -43,7 +43,7 @@ data class FormationMap(
     @Json(name = "g_olocalisation_des_formations") val etabGps: Coordonnees,
     @Json(name = "g_ea_lib_vx") val etablissement: String?,
     @Json(name = "ville_etab") val ville: String?,
-    @Json(name = "fil_lib_voe_acc") val formationDetailleeString: String?,
+    @Json(name = "fil_lib_voe_acc") val filiDetailString: String?,
 )
 
 

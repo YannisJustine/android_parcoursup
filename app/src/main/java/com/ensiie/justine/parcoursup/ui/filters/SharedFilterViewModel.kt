@@ -38,6 +38,10 @@ class SharedFilterViewModel : ViewModel() {
         _filterState.map { it.searchQuery }
             .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
+    val pendingCurrentLocation: StateFlow<Pair<Double, Double>?> =
+        _filterState.map { it.pendingCurrentLocation }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     /**
      * Set location filter
      */
@@ -49,7 +53,21 @@ class SharedFilterViewModel : ViewModel() {
      * Clear location filter
      */
     fun clearLocationFilter() {
-        _filterState.update { it.copy(locationFilter = null) }
+        _filterState.update { it.copy(locationFilter = null, pendingCurrentLocation = null) }
+    }
+
+    /**
+     * Set pending current location (used before validation)
+     */
+    fun setPendingCurrentLocation(location: Pair<Double, Double>?) {
+        _filterState.update { it.copy(pendingCurrentLocation = location) }
+    }
+
+    /**
+     * Clear pending current location
+     */
+    fun clearPendingCurrentLocation() {
+        _filterState.update { it.copy(pendingCurrentLocation = null) }
     }
 
     /**

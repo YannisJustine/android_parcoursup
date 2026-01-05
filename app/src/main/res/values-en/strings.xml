@@ -41,6 +41,7 @@
     
     <string name="location">Location</string>
     <string name="details">Details</string>
+    <string name="similar_formations">Similar courses</string>
     <string name="retry">Retry</string>
 
     <string name="back">Back</string>

@@ -12,14 +12,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class FormationsViewModel(
     private val repository: FormationRepository,
     private val adresseRepository: AdresseRepository,
     private val locationHelper: LocationHelper,
-    private val sharedFilterViewModel: SharedFilterViewModel
+    val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FormationsUiState>(FormationsUiState.Loading)
@@ -67,13 +69,16 @@ class FormationsViewModel(
 
     /**
      * Observe changes in shared filter state and reload data accordingly
+     * Only observes actual search filters, not pendingCurrentLocation
      */
     private fun observeFilterChanges() {
         viewModelScope.launch {
-            sharedFilterViewModel.filterState.collect { filterState ->
-                // Reload formations when filters change
-                searchFormations(filterState.searchQuery)
-            }
+            sharedFilterViewModel.filterState
+                .map { it.copy(pendingCurrentLocation = null) }
+                .distinctUntilChanged()
+                .collect { filterState ->
+                    searchFormations(filterState.searchQuery)
+                }
         }
     }
 

@@ -1,5 +1,8 @@
 package com.ensiie.justine.parcoursup.ui.filters
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -8,7 +11,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,14 +35,17 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +63,26 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextColor
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextField
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 import com.ensiie.justine.parcoursup.utils.LocationFilter
+import com.ensiie.justine.parcoursup.utils.LocationHelper
+
+/**
+ * State holder for location search.
+ */
+class LocationSearchState(
+    initialLocation: Pair<Double, Double>? = null
+) {
+    var savedCurrentLocation by mutableStateOf(initialLocation)
+}
+
+/**
+ * Remember the location search state across configuration changes and process death.
+ */
+@Composable
+fun rememberLocationSearchState(): LocationSearchState {
+    val state = remember { LocationSearchState() }
+    
+    return state
+}
 
 @Composable
 fun LocationFilterCard(
@@ -134,29 +162,58 @@ fun LocationSearchModal(
     onDismiss: () -> Unit,
     locationSheetState: SheetState,
     onLocationSelected: (City, Int) -> Unit,
-    onUseCurrentLocation: (Int) -> Unit,
+    onCurrentLocationSelected: (Double, Double, Int) -> Unit,
     searchCities: suspend (String) -> Result<List<City>>,
-    isLoadingLocation: Boolean,
-    locationError: String? = null,
+    locationHelper: LocationHelper,
+    sharedFilterViewModel: SharedFilterViewModel,
     initialRadius: Int = 10,
     initialCity: City? = null
 ) {
+    val savedCurrentLocation by sharedFilterViewModel.pendingCurrentLocation.collectAsState()
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf(initialCity?.name ?: "") }
     var cities by remember { mutableStateOf<List<City>>(emptyList()) }
     var selectedRadius by remember { mutableStateOf(initialRadius) }
     var isSearching by remember { mutableStateOf(false) }
     var selectedCity by remember { mutableStateOf<City?>(initialCity) }
-    rememberCoroutineScope()
+    var isLoadingLocation by remember { mutableStateOf(false) }
+    var locationError by remember { mutableStateOf<String?>(null) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+        if (fineLocationGranted || coarseLocationGranted) {
+            isLoadingLocation = true
+            locationError = null
+            locationHelper.getCurrentLocation(
+                onGetCurrentLocationSuccess = { (latitude, longitude) ->
+                    sharedFilterViewModel.setPendingCurrentLocation(Pair(latitude, longitude))
+                    isLoadingLocation = false
+                },
+                onGetCurrentLocationFailed = { exception ->
+                    isLoadingLocation = false
+                    locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                }
+            )
+        } else {
+            val intent = android.content.Intent(
+                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                android.net.Uri.fromParts("package", context.packageName, null)
+            )
+            context.startActivity(intent)
+        }
+    }
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.length >= 2) {
             isSearching = true
             kotlinx.coroutines.delay(400)
-            if (searchQuery.length >= 2) {
-                searchCities(searchQuery)
-                    .onSuccess { cities = it }
-                    .onFailure { cities = emptyList() }
-            }
+            searchCities(searchQuery)
+                .onSuccess { cities = it }
+                .onFailure { cities = emptyList() }
             isSearching = false
         } else {
             cities = emptyList()
@@ -167,7 +224,7 @@ fun LocationSearchModal(
         sheetState = locationSheetState,
         onDismissRequest = onDismiss,
         containerColor = DSFRTheme.colors.backgroundDefault,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier
@@ -186,7 +243,32 @@ fun LocationSearchModal(
                 )
 
                 DsfrButton(
-                    onClick = { onUseCurrentLocation(selectedRadius) },
+                    onClick = { 
+                        if (savedCurrentLocation != null) {
+                            sharedFilterViewModel.clearPendingCurrentLocation()
+                            locationError = null
+                        } else if (locationHelper.areLocationPermissionsGranted()) {
+                            isLoadingLocation = true
+                            locationError = null
+                            locationHelper.getCurrentLocation(
+                                onGetCurrentLocationSuccess = { (latitude, longitude) ->
+                                    sharedFilterViewModel.setPendingCurrentLocation(Pair(latitude, longitude))
+                                    isLoadingLocation = false
+                                },
+                                onGetCurrentLocationFailed = { exception ->
+                                    isLoadingLocation = false
+                                    locationError = exception.message ?: "Erreur lors de la récupération de votre position"
+                                }
+                            )
+                        } else {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoadingLocation
                 ) {
@@ -202,10 +284,14 @@ fun LocationSearchModal(
                         )
                     }
                     Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
-                    DsfrText("Utiliser ma position")
+                    DsfrText(
+                        savedCurrentLocation?.let {
+                            stringResource(R.string.remove_current_location)
+                        } ?: stringResource(R.string.get_current_location)
+                    )
                 }
 
-                if (locationError != null) {
+                locationError?.let {
                     DsfrCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -221,7 +307,7 @@ fun LocationSearchModal(
                                 modifier = Modifier.size(20.dp)
                             )
                             DsfrText(
-                                text = locationError,
+                                text = it,
                                 textStyle = DsfrTextStyle.BodySm,
                                 color = DsfrTextColor.Error
                             )
@@ -229,14 +315,16 @@ fun LocationSearchModal(
                     }
                 }
 
-                DsfrTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text(stringResource(R.string.search_city_placeholder)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (savedCurrentLocation == null) {
+                    DsfrTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text(stringResource(R.string.search_city_placeholder)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 DsfrText(
                     text = stringResource(R.string.search_radius),
@@ -268,9 +356,9 @@ fun LocationSearchModal(
                     ) {
                         DsfrCircularProgressIndicator()
                     }
-                } else if (cities.isNotEmpty()) {
+                } else if (cities.isNotEmpty() && savedCurrentLocation == null) {
                     LazyColumn(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.height(300.dp),
                         verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
                         state = rememberLazyListState()
                     ) {
@@ -323,9 +411,13 @@ fun LocationSearchModal(
                     onClick = {
                         if (selectedCity != null) {
                             onLocationSelected(selectedCity!!, selectedRadius)
+                        } else {
+                            savedCurrentLocation?.let { (latitude, longitude) ->
+                                onCurrentLocationSelected(latitude, longitude, selectedRadius)
+                            }
                         }
                     },
-                    enabled = selectedCity != null
+                    enabled = selectedCity != null || savedCurrentLocation != null
                 ) {
                     Text(stringResource(R.string.validate))
                 }

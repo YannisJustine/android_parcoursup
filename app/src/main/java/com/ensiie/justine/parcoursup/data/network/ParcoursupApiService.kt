@@ -8,14 +8,6 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface ParcoursupApiService {
-
-    @GET("fr-esr-parcoursup/records")
-    suspend fun getFormations(
-        @Query("where") where: String = "session=2024",
-        @Query("limit") limit: Int = 100,
-        @Query("offset") offset: Int = 0
-    ): ApiResponse
-
     @GET("fr-esr-parcoursup/exports/json?select=cod_aff_form,g_olocalisation_des_formations,ville_etab,g_ea_lib_vx,fil_lib_voe_acc")
     suspend fun getFormationsMap(
         @Query("where") where: String,

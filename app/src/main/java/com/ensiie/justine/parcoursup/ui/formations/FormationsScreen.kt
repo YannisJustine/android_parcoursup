@@ -1,8 +1,6 @@
 package com.ensiie.justine.parcoursup.ui.formations
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.R.attr.radius
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +62,7 @@ import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.repository.AdresseRepository
 import com.ensiie.justine.parcoursup.ui.filters.LocationFilterCard
 import com.ensiie.justine.parcoursup.ui.filters.LocationSearchModal
+import com.ensiie.justine.parcoursup.ui.filters.rememberLocationSearchState
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButton
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrButtonType
@@ -101,7 +100,7 @@ fun FormationsScreen(
     val selectedTypesEtab by viewModel.selectedTypesEtab.collectAsState()
     val locationFilter by viewModel.locationFilter.collectAsState()
     val filterSheetState = rememberModalBottomSheetState()
-    val locationSheetState = rememberModalBottomSheetState()
+    val locationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val showScrollToTop by remember {
@@ -126,7 +125,7 @@ fun FormationsScreen(
             LocationFilterCard(
                 locationFilter = locationFilter,
                 onClick = { showLocationModal = true },
-                onClear = { viewModel.clearLocationFilter() },
+                onClear = viewModel::clearLocationFilter,
                 modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
             )
 
@@ -302,54 +301,9 @@ fun FormationsScreen(
     }
 
     if (showLocationModal) {
-        var isLoadingLocation by remember { mutableStateOf(false) }
-        var locationError by remember { mutableStateOf<String?>(null) }
-
-        val locationPermissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-            val coarseLocationGranted =
-                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-
-            if (fineLocationGranted || coarseLocationGranted) {
-                isLoadingLocation = true
-                locationError = null
-
-                locationHelper.getCurrentLocation(
-                    onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                        viewModel.setLocationFilter(
-                            LocationFilter(
-                                latitude = latitude,
-                                longitude = longitude,
-                                radiusKm = 10,
-                                cityName = null
-                            )
-                        )
-                        showLocationModal = false
-                        isLoadingLocation = false
-                    },
-                    onGetCurrentLocationFailed = { exception ->
-                        isLoadingLocation = false
-                        locationError =
-                            exception.message ?: "Erreur lors de la récupération de votre position"
-                    }
-                )
-            } else {
-                val intent = android.content.Intent(
-                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    android.net.Uri.fromParts("package", context.packageName, null)
-                )
-                context.startActivity(intent)
-            }
-        }
-
         LocationSearchModal(
             locationSheetState = locationSheetState,
-            onDismiss = {
-                showLocationModal = false
-                locationError = null
-            },
+            onDismiss = { showLocationModal = false },
             onLocationSelected = { selectedCity, radius ->
                 viewModel.setLocationFilter(
                     LocationFilter(
@@ -361,41 +315,20 @@ fun FormationsScreen(
                 )
                 showLocationModal = false
             },
-            onUseCurrentLocation = { radius ->
-                if (locationHelper.areLocationPermissionsGranted()) {
-                    isLoadingLocation = true
-                    locationError = null
-                    locationHelper.getCurrentLocation(
-                        onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                            viewModel.setLocationFilter(
-                                LocationFilter(
-                                    latitude = latitude,
-                                    longitude = longitude,
-                                    radiusKm = radius,
-                                    cityName = null
-                                )
-                            )
-                            showLocationModal = false
-                            isLoadingLocation = false
-                        },
-                        onGetCurrentLocationFailed = { exception ->
-                            isLoadingLocation = false
-                            locationError = exception.message
-                                ?: "Erreur lors de la récupération de votre position"
-                        }
+            onCurrentLocationSelected = { latitude, longitude, radius ->
+                viewModel.setLocationFilter(
+                    LocationFilter(
+                        latitude = latitude,
+                        longitude = longitude,
+                        radiusKm = radius,
+                        cityName = null
                     )
-                } else {
-                    locationPermissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                    )
-                }
+                )
+                showLocationModal = false
             },
             searchCities = { query -> adresseRepository.searchCities(query) },
-            isLoadingLocation = isLoadingLocation,
-            locationError = locationError,
+            locationHelper = locationHelper,
+            sharedFilterViewModel = viewModel.sharedFilterViewModel,
             initialRadius = locationFilter?.radiusKm ?: 10,
             initialCity = locationFilter?.let {
                 if (it.cityName != null) {
@@ -464,8 +397,7 @@ fun FormationCard(
                     textStyle = DsfrTextStyle.HeadingMd
                 )
                 DsfrText(
-                    text = formation.formationDetailleeString
-                        ?: formation.formationLibString
+                    text = formation.formationComplete
                         ?: stringResource(R.string.formation),
                     textStyle = DsfrTextStyle.BodySm,
                     color = DsfrTextColor.Mention

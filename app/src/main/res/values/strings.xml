@@ -42,6 +42,7 @@
     
     <string name="location">Localisation</string>
     <string name="details">Détails</string>
+    <string name="similar_formations">Formations similaires</string>
 
     <string name="back">Retour</string>
     <string name="retry">Réessayer</string>
@@ -70,4 +71,6 @@
     <string name="filter_by_type_count">Filtrer par type (%1$d)</string>
 
     <string name="scroll_to_top">Retour en haut</string>
+    <string name="remove_current_location">Supprimer ma position</string>
+    <string name="get_current_location">Utiliser ma position</string>
 </resources>

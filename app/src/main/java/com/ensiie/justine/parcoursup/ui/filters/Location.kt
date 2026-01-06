@@ -160,21 +160,22 @@ fun LocationSearchModal(
     locationSheetState: SheetState,
     onLocationSelected: (City, Int) -> Unit,
     onCurrentLocationSelected: (Double, Double, Int) -> Unit,
+    onCurrentLocationUpdate: (Double, Double) -> Unit,
     searchCities: suspend (String) -> Result<List<City>>,
     locationHelper: LocationHelper,
-    sharedFilterViewModel: SharedFilterViewModel,
+    currentLocation: Pair<Double, Double>? = null,
     initialRadius: Int = 10,
     initialCity: City? = null
 ) {
-    val savedCurrentLocation by sharedFilterViewModel.pendingCurrentLocation.collectAsState()
     val context = LocalContext.current
-    var searchQuery by remember { mutableStateOf(initialCity?.name ?: "") }
+    var searchQuery by remember { mutableStateOf("") }
     var cities by remember { mutableStateOf<List<City>>(emptyList()) }
     var selectedRadius by remember { mutableStateOf(initialRadius) }
     var isSearching by remember { mutableStateOf(false) }
     var selectedCity by remember { mutableStateOf<City?>(initialCity) }
     var isLoadingLocation by remember { mutableStateOf(false) }
     var locationError by remember { mutableStateOf<String?>(null) }
+    var savedCurrentLocation by remember { mutableStateOf(currentLocation) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -187,7 +188,8 @@ fun LocationSearchModal(
             locationError = null
             locationHelper.getCurrentLocation(
                 onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                    sharedFilterViewModel.setPendingCurrentLocation(Pair(latitude, longitude))
+                    savedCurrentLocation = Pair(latitude, longitude)
+                    onCurrentLocationUpdate(latitude, longitude)
                     isLoadingLocation = false
                 },
                 onGetCurrentLocationFailed = { exception ->
@@ -240,59 +242,57 @@ fun LocationSearchModal(
                     textStyle = DsfrTextStyle.HeadingMd
                 )
 
-                DsfrButton(
-                    onClick = {
-                        if (savedCurrentLocation != null) {
-                            sharedFilterViewModel.clearPendingCurrentLocation()
-                            locationError = null
-                        } else if (locationHelper.areLocationPermissionsGranted()) {
-                            isLoadingLocation = true
-                            locationError = null
-                            locationHelper.getCurrentLocation(
-                                onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                                    sharedFilterViewModel.setPendingCurrentLocation(
-                                        Pair(
-                                            latitude,
-                                            longitude
-                                        )
+                if (selectedCity == null) {
+                    DsfrButton(
+                        onClick = {
+                            if (savedCurrentLocation != null) {
+                                savedCurrentLocation = null
+                                locationError = null
+                            } else if (locationHelper.areLocationPermissionsGranted()) {
+                                isLoadingLocation = true
+                                locationError = null
+                                locationHelper.getCurrentLocation(
+                                    onGetCurrentLocationSuccess = { (latitude, longitude) ->
+                                        savedCurrentLocation = Pair(latitude, longitude)
+                                        onCurrentLocationUpdate(latitude, longitude)
+                                        isLoadingLocation = false
+                                    },
+                                    onGetCurrentLocationFailed = { exception ->
+                                        isLoadingLocation = false
+                                        locationError = exception.message
+                                            ?: "Erreur lors de la récupération de votre position"
+                                    }
+                                )
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
                                     )
-                                    isLoadingLocation = false
-                                },
-                                onGetCurrentLocationFailed = { exception ->
-                                    isLoadingLocation = false
-                                    locationError = exception.message
-                                        ?: "Erreur lors de la récupération de votre position"
-                                }
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoadingLocation
+                    ) {
+                        if (isLoadingLocation) {
+                            DsfrCircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
                             )
                         } else {
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
+                            Icon(
+                                imageVector = Icons.Default.MyLocation,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoadingLocation
-                ) {
-                    if (isLoadingLocation) {
-                        DsfrCircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.MyLocation,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                        Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
+                        DsfrText(
+                            savedCurrentLocation?.let {
+                                stringResource(R.string.remove_current_location)
+                            } ?: stringResource(R.string.get_current_location)
                         )
                     }
-                    Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
-                    DsfrText(
-                        savedCurrentLocation?.let {
-                            stringResource(R.string.remove_current_location)
-                        } ?: stringResource(R.string.get_current_location)
-                    )
                 }
 
                 locationError?.let {
@@ -319,7 +319,38 @@ fun LocationSearchModal(
                     }
                 }
 
-                if (savedCurrentLocation == null) {
+                if (selectedCity != null) {
+                    DsfrCard(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                DsfrText(
+                                    text = selectedCity!!.name,
+                                    textStyle = DsfrTextStyle.BodyMd,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                DsfrText(
+                                    text = selectedCity!!.context,
+                                    textStyle = DsfrTextStyle.BodySm,
+                                    color = DsfrTextColor.Mention
+                                )
+                            }
+                            IconButton(onClick = { selectedCity = null }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Supprimer la sélection",
+                                    tint = DSFRTheme.colors.textDefault,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
                     DsfrTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -360,7 +391,7 @@ fun LocationSearchModal(
                     ) {
                         DsfrCircularProgressIndicator()
                     }
-                } else if (cities.isNotEmpty() && savedCurrentLocation == null) {
+                } else if (cities.isNotEmpty() && selectedCity == null) {
                     LazyColumn(
                         modifier = Modifier.height(300.dp),
                         verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),

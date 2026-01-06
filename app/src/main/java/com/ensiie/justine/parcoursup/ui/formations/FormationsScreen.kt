@@ -324,9 +324,9 @@ fun FormationsScreen(
                 )
                 showLocationModal = false
             },
+            onCurrentLocationUpdate = { _, _ -> },
             searchCities = { query -> adresseRepository.searchCities(query) },
             locationHelper = locationHelper,
-            sharedFilterViewModel = viewModel.sharedFilterViewModel,
             initialRadius = locationFilter?.radiusKm ?: 10,
             initialCity = locationFilter?.let {
                 if (it.cityName != null) {

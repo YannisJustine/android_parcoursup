@@ -37,10 +37,6 @@ class SharedFilterViewModel : ViewModel() {
         _filterState.map { it.searchQuery }
             .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-    val currentLocation: StateFlow<Pair<Double, Double>?> =
-        _filterState.map { it.currentLocation }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
     /**
      * Set location filter
      */
@@ -52,20 +48,7 @@ class SharedFilterViewModel : ViewModel() {
      * Clear location filter
      */
     fun clearLocationFilter() {
-        _filterState.update { it.copy(locationFilter = null, currentLocation = null) }
-    }
-
-    /**     * Set pending current location (before user confirms with radius)
-     */
-    fun setCurrentLocation(latitude: Double, longitude: Double) {
-        _filterState.update { it.copy(currentLocation = Pair(latitude, longitude)) }
-    }
-
-    /**
-     * Clear pending current location
-     */
-    fun clearCurrentLocation() {
-        _filterState.update { it.copy(currentLocation = null) }
+        _filterState.update { it.copy(locationFilter = null) }
     }
 
     /**     * Toggle a filiere selection

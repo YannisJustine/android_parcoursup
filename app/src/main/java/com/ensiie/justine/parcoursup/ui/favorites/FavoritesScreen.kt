@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.FavoriteFormation
+import com.ensiie.justine.parcoursup.ui.formations.FormationCard
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
@@ -114,10 +115,11 @@ fun FavoritesScreen(
                     }
 
                     items(state.favorites, key = { it.id }) { favorite ->
-                        FavoriteCard(
-                            favorite = favorite,
+                        FormationCard(
+                            formation = favorite,
+                            isFavorite = true,
                             onClick = { onNavigateToDetail(favorite.id) },
-                            onRemove = { viewModel.removeFavorite(favorite.id) }
+                            onFavoriteClick = { viewModel.removeFavorite(favorite.id) }
                         )
                     }
                 }
@@ -141,64 +143,6 @@ fun FavoritesScreen(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun FavoriteCard(
-    favorite: FavoriteFormation,
-    onClick: () -> Unit,
-    onRemove: () -> Unit
-) {
-    DsfrCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                DsfrText(
-                    text = favorite.etablissement,
-                    textStyle = DsfrTextStyle.HeadingMd
-                )
-                DsfrText(
-                    text = favorite.formationDetaillee,
-                    textStyle = DsfrTextStyle.BodySm,
-                    color = DsfrTextColor.Mention
-                )
-                DsfrText(
-                    text = "${favorite.ville} - ${favorite.departement}",
-                    textStyle = DsfrTextStyle.BodyXs,
-                    color = DsfrTextColor.Label
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    DsfrTag(
-                        favorite.filiere,
-                        type = DsfrTagType.Primary,
-                        size = DsfrTagSize.Small
-                    )
-                }
-            }
-
-            IconButton(onClick = onRemove) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = stringResource(R.string.remove_from_favorites),
-                    tint = DSFRTheme.colors.error
-                )
             }
         }
     }

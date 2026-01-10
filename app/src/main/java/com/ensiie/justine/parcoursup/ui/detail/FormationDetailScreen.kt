@@ -53,6 +53,7 @@ import androidx.core.net.toUri
 import com.ensiie.justine.parcoursup.R
 import com.ensiie.justine.parcoursup.data.model.EtablissementContactInfo
 import com.ensiie.justine.parcoursup.data.model.Formation
+import com.ensiie.justine.parcoursup.ui.formations.FormationCard
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.DSFRTheme
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCard
 import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrCircularProgressIndicator
@@ -462,7 +463,7 @@ fun FormationDetailContent(
                 beyondViewportPageCount = 1
             ) { page ->
                 val similarFormation = similarFormations[page]
-                SimilarFormationCard(
+                FormationCard(
                     formation = similarFormation,
                     onClick = { onSimilarFormationClick(similarFormation.id) }
                 )
@@ -661,60 +662,5 @@ fun ContactButton(
             tint = DSFRTheme.colors.actionHigh,
             modifier = Modifier.size(24.dp)
         )
-    }
-}
-
-@Composable
-fun SimilarFormationCard(
-    formation: Formation,
-    onClick: () -> Unit
-) {
-    DsfrCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(DSFRTheme.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.xs)
-        ) {
-            DsfrText(
-                text = formation.etablissement
-                    ?: stringResource(R.string.establishment_unknown),
-                textStyle = DsfrTextStyle.HeadingMd
-            )
-            DsfrText(
-                text = formation.formationComplete
-                    ?: stringResource(R.string.formation),
-                textStyle = DsfrTextStyle.BodySm,
-                color = DsfrTextColor.Mention
-            )
-            DsfrText(
-                text = "${formation.ville ?: ""} - ${formation.departement ?: ""}",
-                textStyle = DsfrTextStyle.BodyXs,
-                color = DsfrTextColor.Label
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
-            ) {
-                formation.capacite?.let {
-                    DsfrTag(
-                        stringResource(R.string.capacity) + ": $it",
-                        type = DsfrTagType.Primary,
-                        size = DsfrTagSize.Small
-                    )
-                }
-                formation.tauxAcces?.let {
-                    DsfrTag(
-                        stringResource(R.string.access_format, it),
-                        type = DsfrTagType.Primary,
-                        size = DsfrTagSize.Small
-                    )
-                }
-            }
-        }
     }
 }

@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.core.app.ActivityCompat
+import com.ensiie.justine.parcoursup.data.model.City
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -71,5 +72,5 @@ data class LocationFilter(
     val latitude: Double,
     val longitude: Double,
     val radiusKm: Int,
-    val cityName: String? = null
+    val city: City
 )

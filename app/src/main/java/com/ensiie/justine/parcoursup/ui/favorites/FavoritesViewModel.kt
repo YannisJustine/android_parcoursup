@@ -3,6 +3,7 @@ package com.ensiie.justine.parcoursup.ui.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ensiie.justine.parcoursup.data.model.FavoriteFormation
+import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.repository.FormationRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,7 @@ class FavoritesViewModel(
             if (favorites.isEmpty()) {
                 FavoritesUiState.Empty
             } else {
-                FavoritesUiState.Success(favorites)
+                FavoritesUiState.Success(favorites.map { it.toFormation() })
             }
         }
         .stateIn(
@@ -38,5 +39,5 @@ class FavoritesViewModel(
 sealed interface FavoritesUiState {
     data object Loading : FavoritesUiState
     data object Empty : FavoritesUiState
-    data class Success(val favorites: List<FavoriteFormation>) : FavoritesUiState
+    data class Success(val favorites: List<Formation>) : FavoritesUiState
 }

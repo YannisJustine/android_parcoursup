@@ -30,7 +30,7 @@ class FormationsViewModel(
     val selectedFilieres: StateFlow<Set<String>> = sharedFilterViewModel.selectedFilieres
     val selectedTypesEtab: StateFlow<Set<String>> = sharedFilterViewModel.selectedTypesEtab
     val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
-    val currentLocation: StateFlow<Pair<Double, Double>?> = sharedFilterViewModel.currentLocation
+
 
     private val _filieres = MutableStateFlow<List<String>>(emptyList())
     val filieres: StateFlow<List<String>> = _filieres.asStateFlow()
@@ -73,8 +73,6 @@ class FormationsViewModel(
     private fun observeFilterChanges() {
         viewModelScope.launch {
             sharedFilterViewModel.filterState
-                .map { it.copy(currentLocation = null) }
-                .distinctUntilChanged()
                 .collect { filterState ->
                     searchFormations(filterState.searchQuery)
                 }
@@ -171,14 +169,6 @@ class FormationsViewModel(
 
     fun clearLocationFilter() {
         sharedFilterViewModel.clearLocationFilter()
-    }
-
-    fun setCurrentLocation(latitude: Double, longitude: Double) {
-        sharedFilterViewModel.setCurrentLocation(latitude, longitude)
-    }
-
-    fun clearCurrentLocation() {
-        sharedFilterViewModel.clearCurrentLocation()
     }
 
     fun toggleFavorite(formation: Formation) {

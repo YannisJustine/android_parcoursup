@@ -4,6 +4,7 @@ import com.ensiie.justine.parcoursup.data.local.FavoriteFormationDao
 import com.ensiie.justine.parcoursup.data.model.FavoriteFormation
 import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationMap
+import com.ensiie.justine.parcoursup.data.model.toFavoriteFormation
 import com.ensiie.justine.parcoursup.data.network.ParcoursupApiService
 import com.ensiie.justine.parcoursup.utils.LocationFilter
 import kotlinx.coroutines.flow.Flow
@@ -111,20 +112,7 @@ class FormationRepository(
         favoriteDao.isFavorite(id)
 
     suspend fun addFavorite(formation: Formation) {
-        val coords = formation.coordonnees
-        val favoriteId = formation.id
-        val favorite = FavoriteFormation(
-            id = favoriteId,
-            etablissement = formation.etablissement ?: "",
-            ville = formation.ville ?: "",
-            departement = formation.departement ?: "",
-            filiere = formation.filiere ?: "",
-            formationLib = formation.formationLibelle ?: "",
-            formationDetaillee = formation.filiereDetail ?: "",
-            latitude = coords?.getOrNull(0),
-            longitude = coords?.getOrNull(1)
-        )
-        favoriteDao.insertFavorite(favorite)
+        favoriteDao.insertFavorite(formation.toFavoriteFormation())
     }
 
     suspend fun removeFavorite(id: String) {

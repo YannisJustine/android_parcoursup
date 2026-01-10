@@ -23,7 +23,6 @@ class MapViewModel(
 
     // Use shared filter state from SharedFilterViewModel
     val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
-    val currentLocation: StateFlow<Pair<Double, Double>?> = sharedFilterViewModel.currentLocation
 
     // Track clicked formations at location (persists across navigation)
     private val _clickedFormations = MutableStateFlow<List<FormationMap>?>(null)
@@ -71,14 +70,6 @@ class MapViewModel(
 
     fun clearLocationFilter() {
         sharedFilterViewModel.clearLocationFilter()
-    }
-
-    fun setCurrentLocation(latitude: Double, longitude: Double) {
-        sharedFilterViewModel.setCurrentLocation(latitude, longitude)
-    }
-
-    fun clearCurrentLocation() {
-        sharedFilterViewModel.clearCurrentLocation()
     }
 
     fun setClickedFormations(formations: List<FormationMap>?) {

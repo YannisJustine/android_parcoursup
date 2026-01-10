@@ -1,5 +1,8 @@
 package com.ensiie.justine.parcoursup.ui.theme.dsfr
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -359,6 +362,7 @@ fun DSFRTheme(
         LocalDSFRTypography provides DefaultDSFRTypography,
         LocalDSFRSpacing provides DefaultDSFRSpacing,
         LocalDSFRElevation provides DefaultDSFRElevation,
+        LocalOverscrollFactory provides null,
         content = content
     )
 }

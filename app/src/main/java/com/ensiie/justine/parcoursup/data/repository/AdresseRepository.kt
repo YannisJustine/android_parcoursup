@@ -21,4 +21,21 @@ class AdresseRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun reverse(latitude: Double, longitude: Double): Result<City> {
+        return try {
+            val response = apiService.reverseGeocode(
+                longitude = longitude,
+                latitude = latitude,
+                index = "address"
+            )
+            if (response.features.isEmpty()) {
+                Result.failure(Exception("Aucune adresse trouvée pour ces coordonnées"))
+            } else {
+                Result.success(response.features.first().toCity())
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

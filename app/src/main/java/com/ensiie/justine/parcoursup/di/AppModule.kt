@@ -115,7 +115,9 @@ val appModule = module {
             get(),
             ParcoursupDatabase::class.java,
             "parcoursup_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     // DAO

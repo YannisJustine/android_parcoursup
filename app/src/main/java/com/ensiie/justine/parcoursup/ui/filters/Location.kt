@@ -5,6 +5,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,7 +37,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,29 +64,9 @@ import com.ensiie.justine.parcoursup.ui.theme.dsfr.components.DsfrTextStyle
 import com.ensiie.justine.parcoursup.utils.LocationFilter
 import com.ensiie.justine.parcoursup.utils.LocationHelper
 
-/**
- * State holder for location search.
- */
-class LocationSearchState(
-    initialLocation: Pair<Double, Double>? = null
-) {
-    var savedCurrentLocation by mutableStateOf(initialLocation)
-}
-
-/**
- * Remember the location search state across configuration changes and process death.
- */
-@Composable
-fun rememberLocationSearchState(): LocationSearchState {
-    val state = remember { LocationSearchState() }
-
-    return state
-}
-
 @Composable
 fun LocationFilterCard(
     locationFilter: LocationFilter?,
-    currentLocation: Pair<Double, Double>?,
     onClick: () -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier
@@ -112,27 +94,21 @@ fun LocationFilterCard(
                     tint = if (locationFilter != null) DSFRTheme.colors.actionHigh else DSFRTheme.colors.textDefault,
                     modifier = Modifier.size(20.dp)
                 )
-    
+
 
                 if (locationFilter != null) {
                     Column {
+                        CityContent(city = locationFilter.city)
                         DsfrText(
-                            text = when {
-                                currentLocation != null -> stringResource(
-                                    R.string.current_location,
-                                )
-                                locationFilter?.cityName != null -> locationFilter.cityName
-                                else -> stringResource(R.string.unknown_city)
-                            },
-                            textStyle = DsfrTextStyle.BodyMd,
-                            fontWeight = FontWeight.Bold
-                        )
-                        DsfrText(
-                            text = stringResource(R.string.radius_km, locationFilter?.radiusKm ?: 0),
+                            text = stringResource(
+                                R.string.radius_km,
+                                locationFilter.radiusKm
+                            ),
                             textStyle = DsfrTextStyle.BodySm,
                             color = DsfrTextColor.Mention
                         )
                     }
+
                 } else {
                     DsfrText(
                         text = stringResource(R.string.filter_by_location),
@@ -161,17 +137,83 @@ fun LocationFilterCard(
     }
 }
 
+@Composable
+fun CityContent(
+    city: City,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        DsfrText(
+            text = "${city.cityName} (${city.postcode})",
+            textStyle = DsfrTextStyle.BodyMd,
+            fontWeight = FontWeight.Bold
+        )
+        city.street?.let { street ->
+            DsfrText(
+                text = street,
+                textStyle = DsfrTextStyle.BodySm,
+                color = DsfrTextColor.Mention
+            )
+        }
+
+        if (city.context.isNotBlank()) {
+            DsfrText(
+                text = city.context,
+                textStyle = DsfrTextStyle.BodySm,
+                color = DsfrTextColor.Mention
+            )
+        }
+    }
+}
+
+@Composable
+fun CityCard(
+    city: City,
+    onClick: (() -> Unit)? = null,
+    onRemove: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    DsfrCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CityContent(
+                city = city,
+                modifier = Modifier.weight(1f)
+            )
+            onRemove?.let {
+                IconButton(onClick = it) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Supprimer la sélection",
+                        tint = DSFRTheme.colors.textDefault,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationSearchModal(
     onDismiss: () -> Unit,
     locationSheetState: SheetState,
     onLocationSelected: (City, Int) -> Unit,
-    onCurrentLocationSelected: (Double, Double, Int) -> Unit,
-    onCurrentLocationUpdate: (Double, Double) -> Unit,
+    onCurrentLocationSelected: (City, Int) -> Unit,
     searchCities: suspend (String) -> Result<List<City>>,
+    reverseGeocode: suspend (Double, Double) -> Result<City>,
     locationHelper: LocationHelper,
-    currentLocation: Pair<Double, Double>?,
     initialRadius: Int = 10,
     initialCity: City? = null
 ) {
@@ -183,7 +225,8 @@ fun LocationSearchModal(
     var selectedCity by remember { mutableStateOf<City?>(initialCity) }
     var isLoadingLocation by remember { mutableStateOf(false) }
     var locationError by remember { mutableStateOf<String?>(null) }
-    var localCurrentLocation by remember { mutableStateOf(currentLocation) }
+    var currentLocationCity by remember { mutableStateOf<City?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -196,8 +239,18 @@ fun LocationSearchModal(
             locationError = null
             locationHelper.getCurrentLocation(
                 onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                    localCurrentLocation = Pair(latitude, longitude)
-                    isLoadingLocation = false
+                    coroutineScope.launch {
+                        reverseGeocode(latitude, longitude)
+                            .onSuccess { city ->
+                                currentLocationCity = city
+                                isLoadingLocation = false
+                                locationError = null
+                            }
+                            .onFailure { exception ->
+                                isLoadingLocation = false
+                                locationError = exception.message ?: "Erreur lors de la récupération de l'adresse"
+                            }
+                    }
                 },
                 onGetCurrentLocationFailed = { exception ->
                     isLoadingLocation = false
@@ -250,28 +303,11 @@ fun LocationSearchModal(
                 )
 
                 if (selectedCity == null) {
-                    if (localCurrentLocation != null) {
-                        DsfrCard(
+                    if (currentLocationCity != null) {
+                        CityCard(
+                            city = currentLocationCity!!,
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MyLocation,
-                                    contentDescription = null,
-                                    tint = DSFRTheme.colors.actionHigh,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                DsfrText(
-                                    text = stringResource(R.string.current_location),
-                                    textStyle = DsfrTextStyle.BodyMd,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+                        )
                     } else {
                         DsfrButton(
                             onClick = {
@@ -280,8 +316,19 @@ fun LocationSearchModal(
                                     locationError = null
                                     locationHelper.getCurrentLocation(
                                         onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                                            localCurrentLocation = Pair(latitude, longitude)
-                                            isLoadingLocation = false
+                                            coroutineScope.launch {
+                                                reverseGeocode(latitude, longitude)
+                                                    .onSuccess { city ->
+                                                        currentLocationCity = city
+                                                        isLoadingLocation = false
+                                                        locationError = null
+                                                    }
+                                                    .onFailure { exception ->
+                                                        isLoadingLocation = false
+                                                        locationError = exception.message
+                                                            ?: "Erreur lors de la récupération de l'adresse"
+                                                    }
+                                            }
                                         },
                                         onGetCurrentLocationFailed = { exception ->
                                             isLoadingLocation = false
@@ -345,37 +392,11 @@ fun LocationSearchModal(
                 }
 
                 if (selectedCity != null) {
-                    DsfrCard(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                DsfrText(
-                                    text = selectedCity!!.name,
-                                    textStyle = DsfrTextStyle.BodyMd,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                DsfrText(
-                                    text = selectedCity!!.context,
-                                    textStyle = DsfrTextStyle.BodySm,
-                                    color = DsfrTextColor.Mention
-                                )
-                            }
-                            IconButton(onClick = { selectedCity = null }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Supprimer la sélection",
-                                    tint = DSFRTheme.colors.textDefault,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                } else if (currentLocation == null){
+                    CityCard(
+                        city = selectedCity!!,
+                        onRemove = { selectedCity = null }
+                    )
+                } else if (currentLocationCity == null) {
                     DsfrTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -423,32 +444,16 @@ fun LocationSearchModal(
                         state = rememberLazyListState()
                     ) {
                         items(cities) { city ->
-                            DsfrCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selectedCity = city
-                                    }
-                                    .then(
-                                        if (selectedCity == city) Modifier.border(
-                                            2.dp,
-                                            DSFRTheme.colors.actionHigh
-                                        ) else Modifier
-                                    ),
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    DsfrText(
-                                        text = city.name,
-                                        textStyle = DsfrTextStyle.BodyMd,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    DsfrText(
-                                        text = city.context,
-                                        textStyle = DsfrTextStyle.BodySm,
-                                        color = DsfrTextColor.Mention
-                                    )
-                                }
-                            }
+                            CityCard(
+                                city = city,
+                                onClick = { selectedCity = city },
+                                modifier = Modifier.then(
+                                    if (selectedCity == city) Modifier.border(
+                                        2.dp,
+                                        DSFRTheme.colors.actionHigh
+                                    ) else Modifier
+                                )
+                            )
                         }
                     }
                 }
@@ -472,13 +477,12 @@ fun LocationSearchModal(
                         if (selectedCity != null) {
                             onLocationSelected(selectedCity!!, selectedRadius)
                         } else {
-                            localCurrentLocation?.let { (latitude, longitude) ->
-                                onCurrentLocationUpdate(latitude, longitude)
-                                onCurrentLocationSelected(latitude, longitude, selectedRadius)
+                            currentLocationCity?.let { city ->
+                                onCurrentLocationSelected(city, selectedRadius)
                             }
                         }
                     },
-                    enabled = selectedCity != null || localCurrentLocation != null
+                    enabled = selectedCity != null || currentLocationCity != null
                 ) {
                     Text(stringResource(R.string.validate))
                 }

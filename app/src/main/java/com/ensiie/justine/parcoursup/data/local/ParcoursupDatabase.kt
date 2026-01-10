@@ -6,7 +6,7 @@ import com.ensiie.justine.parcoursup.data.model.FavoriteFormation
 
 @Database(
     entities = [FavoriteFormation::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class ParcoursupDatabase : RoomDatabase() {

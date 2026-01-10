@@ -97,8 +97,7 @@ fun FormationsScreen(
     val selectedFilieres by viewModel.selectedFilieres.collectAsState()
     val selectedTypesEtab by viewModel.selectedTypesEtab.collectAsState()
     val locationFilter by viewModel.locationFilter.collectAsState()
-    val currentLocation by viewModel.currentLocation.collectAsState()
-    val filterSheetState = rememberModalBottomSheetState()
+    val filterSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val locationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -123,7 +122,6 @@ fun FormationsScreen(
 
             LocationFilterCard(
                 locationFilter = locationFilter,
-                currentLocation = currentLocation,
                 onClick = { showLocationModal = true },
                 onClear = viewModel::clearLocationFilter,
                 modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
@@ -310,40 +308,27 @@ fun FormationsScreen(
                         latitude = selectedCity.latitude,
                         longitude = selectedCity.longitude,
                         radiusKm = radius,
-                        cityName = selectedCity.name
+                        city = selectedCity
                     )
                 )
                 showLocationModal = false
             },
-            onCurrentLocationSelected = { latitude, longitude, radius ->
+            onCurrentLocationSelected = { city, radius ->
                 viewModel.setLocationFilter(
                     LocationFilter(
-                        latitude = latitude,
-                        longitude = longitude,
+                        latitude = city.latitude,
+                        longitude = city.longitude,
                         radiusKm = radius,
-                        cityName = null
+                        city = city
                     )
                 )
                 showLocationModal = false
             },
-            onCurrentLocationUpdate = { latitude, longitude ->
-                viewModel.setCurrentLocation(latitude, longitude)
-            },
             searchCities = { query -> adresseRepository.searchCities(query) },
+            reverseGeocode = { latitude, longitude -> adresseRepository.reverse(latitude, longitude) },
             locationHelper = locationHelper,
-            currentLocation = currentLocation,
             initialRadius = locationFilter?.radiusKm ?: 10,
-            initialCity = locationFilter?.let {
-                if (it.cityName != null) {
-                    City(
-                        name = it.cityName,
-                        fullLabel = it.cityName,
-                        longitude = it.longitude,
-                        latitude = it.latitude,
-                        context = ""
-                    )
-                } else null
-            }
+            initialCity = locationFilter?.city
         )
     }
 }
@@ -378,8 +363,8 @@ fun SearchBar(
 fun FormationCard(
     formation: Formation,
     onClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
-    isFavorite: Boolean
+    onFavoriteClick: (() -> Unit)? = null,
+    isFavorite: Boolean = false
 ) {
     DsfrCard(
         modifier = Modifier
@@ -399,12 +384,15 @@ fun FormationCard(
                         ?: stringResource(R.string.establishment_unknown),
                     textStyle = DsfrTextStyle.HeadingMd
                 )
+                Spacer(modifier = Modifier.height(DSFRTheme.spacing.sm))
                 DsfrText(
                     text = formation.formationComplete
                         ?: stringResource(R.string.formation),
                     textStyle = DsfrTextStyle.BodySm,
                     color = DsfrTextColor.Mention
                 )
+                Spacer(modifier = Modifier.height(DSFRTheme.spacing.xs))
+
                 DsfrText(
                     text = "${formation.ville ?: ""} - ${formation.departement ?: ""}",
                     textStyle = DsfrTextStyle.BodyXs,
@@ -432,18 +420,20 @@ fun FormationCard(
                     }
                 }
             }
+            if (onFavoriteClick != null) {
 
-            IconButton(onClick = onFavoriteClick) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite
-                    else Icons.Filled.FavoriteBorder,
-                    contentDescription = stringResource(
-                        if (isFavorite) R.string.remove_from_favorites
-                        else R.string.add_to_favorites
-                    ),
-                    tint = if (isFavorite) DSFRTheme.colors.error
-                    else DSFRTheme.colors.textDefault
-                )
+                IconButton(onClick = onFavoriteClick) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite
+                        else Icons.Filled.FavoriteBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.remove_from_favorites
+                            else R.string.add_to_favorites
+                        ),
+                        tint = if (isFavorite) DSFRTheme.colors.error
+                        else DSFRTheme.colors.textDefault
+                    )
+                }
             }
         }
     }
@@ -479,7 +469,7 @@ fun FilterTagsRow(
                         horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm)
                     ) {
                         DsfrText(
-                            stringResource(R.string.filter_by_filiere),
+                            stringResource(R.string.filter_by_field),
                             textStyle = DsfrTextStyle.BodySm
                         )
                         Icon(
@@ -491,7 +481,7 @@ fun FilterTagsRow(
                 } else {
                     DsfrText(
                         stringResource(
-                            R.string.filter_by_filiere_count,
+                            R.string.filter_by_field_count,
                             selectedFilieresCount
                         ), textStyle = DsfrTextStyle.BodySm
                     )
@@ -568,11 +558,15 @@ fun FilterModalBottomSheet(
                 ) {
                     DsfrText(
                         text = title,
-                        textStyle = DsfrTextStyle.HeadingMd
+                        textStyle = DsfrTextStyle.HeadingMd,
+                        modifier = Modifier.weight(1f)
                     )
 
                     if (tempSelectedOptions.isNotEmpty()) {
-                        DsfrTextButton(onClick = { tempSelectedOptions = emptySet() }) {
+                        DsfrTextButton(
+                            onClick = { tempSelectedOptions = emptySet() },
+                            modifier = Modifier
+                        ) {
                             Text(stringResource(R.string.clear_all))
                         }
                     }

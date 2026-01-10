@@ -11,4 +11,11 @@ interface AdresseApiService {
         @Query("q") query: String,
         @Query("limit") limit: Int = 10
     ): CitySearchResponse
+
+    @GET("reverse/")
+    suspend fun reverseGeocode(
+        @Query("lon") longitude: Double,
+        @Query("lat") latitude: Double,
+        @Query("index") index: String = "address"
+    ): CitySearchResponse
 }

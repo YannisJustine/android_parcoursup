@@ -143,6 +143,7 @@ fun MapLibre(
     LocalContext.current
 
     val locationFilter by viewModel.locationFilter.collectAsState()
+    val currentLocation by viewModel.currentLocation.collectAsState()
     val formationsAtClickedLocation by viewModel.clickedFormations.collectAsState()
 
     val locationSheetState = rememberModalBottomSheetState()
@@ -167,6 +168,7 @@ fun MapLibre(
 
         LocationFilterCard(
             locationFilter = locationFilter,
+            currentLocation = currentLocation,
             onClick = { showLocationModal = true },
             onClear = { viewModel.clearLocationFilter() },
             modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
@@ -198,9 +200,12 @@ fun MapLibre(
                     )
                     showLocationModal = false
                 },
+                onCurrentLocationUpdate = { latitude, longitude ->
+                    viewModel.setCurrentLocation(latitude, longitude)
+                },
                 searchCities = { query -> adresseRepository.searchCities(query) },
                 locationHelper = locationHelper,
-                sharedFilterViewModel = viewModel.sharedFilterViewModel,
+                currentLocation = currentLocation,
                 initialRadius = locationFilter?.radiusKm ?: 10,
                 initialCity = locationFilter?.let {
                     if (it.cityName != null) {

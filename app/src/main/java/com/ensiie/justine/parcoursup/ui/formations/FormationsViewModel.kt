@@ -19,9 +19,7 @@ import kotlinx.coroutines.launch
 
 class FormationsViewModel(
     private val repository: FormationRepository,
-    private val adresseRepository: AdresseRepository,
-    private val locationHelper: LocationHelper,
-    val sharedFilterViewModel: SharedFilterViewModel
+    private val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FormationsUiState>(FormationsUiState.Loading)
@@ -32,6 +30,7 @@ class FormationsViewModel(
     val selectedFilieres: StateFlow<Set<String>> = sharedFilterViewModel.selectedFilieres
     val selectedTypesEtab: StateFlow<Set<String>> = sharedFilterViewModel.selectedTypesEtab
     val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
+    val currentLocation: StateFlow<Pair<Double, Double>?> = sharedFilterViewModel.currentLocation
 
     private val _filieres = MutableStateFlow<List<String>>(emptyList())
     val filieres: StateFlow<List<String>> = _filieres.asStateFlow()
@@ -69,12 +68,12 @@ class FormationsViewModel(
 
     /**
      * Observe changes in shared filter state and reload data accordingly
-     * Only observes actual search filters, not pendingCurrentLocation
+     * Only observes actual search filters, not currentLocation
      */
     private fun observeFilterChanges() {
         viewModelScope.launch {
             sharedFilterViewModel.filterState
-                .map { it.copy(pendingCurrentLocation = null) }
+                .map { it.copy(currentLocation = null) }
                 .distinctUntilChanged()
                 .collect { filterState ->
                     searchFormations(filterState.searchQuery)
@@ -172,6 +171,14 @@ class FormationsViewModel(
 
     fun clearLocationFilter() {
         sharedFilterViewModel.clearLocationFilter()
+    }
+
+    fun setCurrentLocation(latitude: Double, longitude: Double) {
+        sharedFilterViewModel.setCurrentLocation(latitude, longitude)
+    }
+
+    fun clearCurrentLocation() {
+        sharedFilterViewModel.clearCurrentLocation()
     }
 
     fun toggleFavorite(formation: Formation) {

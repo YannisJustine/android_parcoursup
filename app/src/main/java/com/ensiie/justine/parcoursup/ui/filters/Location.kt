@@ -84,6 +84,7 @@ fun rememberLocationSearchState(): LocationSearchState {
 @Composable
 fun LocationFilterCard(
     locationFilter: LocationFilter?,
+    currentLocation: Pair<Double, Double>?,
     onClick: () -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier
@@ -111,16 +112,23 @@ fun LocationFilterCard(
                     tint = if (locationFilter != null) DSFRTheme.colors.actionHigh else DSFRTheme.colors.textDefault,
                     modifier = Modifier.size(20.dp)
                 )
+    
+
                 if (locationFilter != null) {
                     Column {
                         DsfrText(
-                            text = locationFilter.cityName
-                                ?: stringResource(R.string.current_location),
+                            text = when {
+                                currentLocation != null -> stringResource(
+                                    R.string.current_location,
+                                )
+                                locationFilter?.cityName != null -> locationFilter.cityName
+                                else -> stringResource(R.string.unknown_city)
+                            },
                             textStyle = DsfrTextStyle.BodyMd,
                             fontWeight = FontWeight.Bold
                         )
                         DsfrText(
-                            text = stringResource(R.string.radius_km, locationFilter.radiusKm),
+                            text = stringResource(R.string.radius_km, locationFilter?.radiusKm ?: 0),
                             textStyle = DsfrTextStyle.BodySm,
                             color = DsfrTextColor.Mention
                         )
@@ -163,7 +171,7 @@ fun LocationSearchModal(
     onCurrentLocationUpdate: (Double, Double) -> Unit,
     searchCities: suspend (String) -> Result<List<City>>,
     locationHelper: LocationHelper,
-    currentLocation: Pair<Double, Double>? = null,
+    currentLocation: Pair<Double, Double>?,
     initialRadius: Int = 10,
     initialCity: City? = null
 ) {
@@ -175,7 +183,7 @@ fun LocationSearchModal(
     var selectedCity by remember { mutableStateOf<City?>(initialCity) }
     var isLoadingLocation by remember { mutableStateOf(false) }
     var locationError by remember { mutableStateOf<String?>(null) }
-    var savedCurrentLocation by remember { mutableStateOf(currentLocation) }
+    var localCurrentLocation by remember { mutableStateOf(currentLocation) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -188,8 +196,7 @@ fun LocationSearchModal(
             locationError = null
             locationHelper.getCurrentLocation(
                 onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                    savedCurrentLocation = Pair(latitude, longitude)
-                    onCurrentLocationUpdate(latitude, longitude)
+                    localCurrentLocation = Pair(latitude, longitude)
                     isLoadingLocation = false
                 },
                 onGetCurrentLocationFailed = { exception ->
@@ -243,55 +250,73 @@ fun LocationSearchModal(
                 )
 
                 if (selectedCity == null) {
-                    DsfrButton(
-                        onClick = {
-                            if (savedCurrentLocation != null) {
-                                savedCurrentLocation = null
-                                locationError = null
-                            } else if (locationHelper.areLocationPermissionsGranted()) {
-                                isLoadingLocation = true
-                                locationError = null
-                                locationHelper.getCurrentLocation(
-                                    onGetCurrentLocationSuccess = { (latitude, longitude) ->
-                                        savedCurrentLocation = Pair(latitude, longitude)
-                                        onCurrentLocationUpdate(latitude, longitude)
-                                        isLoadingLocation = false
-                                    },
-                                    onGetCurrentLocationFailed = { exception ->
-                                        isLoadingLocation = false
-                                        locationError = exception.message
-                                            ?: "Erreur lors de la récupération de votre position"
-                                    }
+                    if (localCurrentLocation != null) {
+                        DsfrCard(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(DSFRTheme.spacing.sm),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MyLocation,
+                                    contentDescription = null,
+                                    tint = DSFRTheme.colors.actionHigh,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                            } else {
-                                locationPermissionLauncher.launch(
-                                    arrayOf(
-                                        Manifest.permission.ACCESS_FINE_LOCATION,
-                                        Manifest.permission.ACCESS_COARSE_LOCATION
-                                    )
+                                DsfrText(
+                                    text = stringResource(R.string.current_location),
+                                    textStyle = DsfrTextStyle.BodyMd,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoadingLocation
-                    ) {
-                        if (isLoadingLocation) {
-                            DsfrCircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.MyLocation,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
+                        }
+                    } else {
+                        DsfrButton(
+                            onClick = {
+                                if (locationHelper.areLocationPermissionsGranted()) {
+                                    isLoadingLocation = true
+                                    locationError = null
+                                    locationHelper.getCurrentLocation(
+                                        onGetCurrentLocationSuccess = { (latitude, longitude) ->
+                                            localCurrentLocation = Pair(latitude, longitude)
+                                            isLoadingLocation = false
+                                        },
+                                        onGetCurrentLocationFailed = { exception ->
+                                            isLoadingLocation = false
+                                            locationError = exception.message
+                                                ?: "Erreur lors de la récupération de votre position"
+                                        }
+                                    )
+                                } else {
+                                    locationPermissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isLoadingLocation
+                        ) {
+                            if (isLoadingLocation) {
+                                DsfrCircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.MyLocation,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
+                            DsfrText(
+                                stringResource(R.string.get_current_location)
                             )
                         }
-                        Spacer(modifier = Modifier.width(DSFRTheme.spacing.sm))
-                        DsfrText(
-                            savedCurrentLocation?.let {
-                                stringResource(R.string.remove_current_location)
-                            } ?: stringResource(R.string.get_current_location)
-                        )
                     }
                 }
 
@@ -350,7 +375,7 @@ fun LocationSearchModal(
                             }
                         }
                     }
-                } else {
+                } else if (currentLocation == null){
                     DsfrTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -447,12 +472,13 @@ fun LocationSearchModal(
                         if (selectedCity != null) {
                             onLocationSelected(selectedCity!!, selectedRadius)
                         } else {
-                            savedCurrentLocation?.let { (latitude, longitude) ->
+                            localCurrentLocation?.let { (latitude, longitude) ->
+                                onCurrentLocationUpdate(latitude, longitude)
                                 onCurrentLocationSelected(latitude, longitude, selectedRadius)
                             }
                         }
                     },
-                    enabled = selectedCity != null || savedCurrentLocation != null
+                    enabled = selectedCity != null || localCurrentLocation != null
                 ) {
                     Text(stringResource(R.string.validate))
                 }

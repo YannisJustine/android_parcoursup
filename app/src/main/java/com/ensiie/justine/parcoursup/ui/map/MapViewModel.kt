@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class MapViewModel(
     private val repository: FormationRepository,
     private val adresseRepository: AdresseRepository,
-    val sharedFilterViewModel: SharedFilterViewModel
+    private val sharedFilterViewModel: SharedFilterViewModel
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
@@ -23,6 +23,7 @@ class MapViewModel(
 
     // Use shared filter state from SharedFilterViewModel
     val locationFilter: StateFlow<LocationFilter?> = sharedFilterViewModel.locationFilter
+    val currentLocation: StateFlow<Pair<Double, Double>?> = sharedFilterViewModel.currentLocation
 
     // Track clicked formations at location (persists across navigation)
     private val _clickedFormations = MutableStateFlow<List<FormationMap>?>(null)
@@ -70,6 +71,14 @@ class MapViewModel(
 
     fun clearLocationFilter() {
         sharedFilterViewModel.clearLocationFilter()
+    }
+
+    fun setCurrentLocation(latitude: Double, longitude: Double) {
+        sharedFilterViewModel.setCurrentLocation(latitude, longitude)
+    }
+
+    fun clearCurrentLocation() {
+        sharedFilterViewModel.clearCurrentLocation()
     }
 
     fun setClickedFormations(formations: List<FormationMap>?) {

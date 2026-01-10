@@ -97,6 +97,7 @@ fun FormationsScreen(
     val selectedFilieres by viewModel.selectedFilieres.collectAsState()
     val selectedTypesEtab by viewModel.selectedTypesEtab.collectAsState()
     val locationFilter by viewModel.locationFilter.collectAsState()
+    val currentLocation by viewModel.currentLocation.collectAsState()
     val filterSheetState = rememberModalBottomSheetState()
     val locationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
@@ -122,6 +123,7 @@ fun FormationsScreen(
 
             LocationFilterCard(
                 locationFilter = locationFilter,
+                currentLocation = currentLocation,
                 onClick = { showLocationModal = true },
                 onClear = viewModel::clearLocationFilter,
                 modifier = Modifier.padding(horizontal = DSFRTheme.spacing.md, vertical = 4.dp)
@@ -324,9 +326,12 @@ fun FormationsScreen(
                 )
                 showLocationModal = false
             },
-            onCurrentLocationUpdate = { _, _ -> },
+            onCurrentLocationUpdate = { latitude, longitude ->
+                viewModel.setCurrentLocation(latitude, longitude)
+            },
             searchCities = { query -> adresseRepository.searchCities(query) },
             locationHelper = locationHelper,
+            currentLocation = currentLocation,
             initialRadius = locationFilter?.radiusKm ?: 10,
             initialCity = locationFilter?.let {
                 if (it.cityName != null) {

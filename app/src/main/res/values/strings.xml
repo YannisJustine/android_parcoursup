@@ -73,4 +73,5 @@
     <string name="scroll_to_top">Retour en haut</string>
     <string name="remove_current_location">Supprimer ma position</string>
     <string name="get_current_location">Utiliser ma position</string>
+    <string name="unknown_city">Ville inconnu</string>
 </resources>

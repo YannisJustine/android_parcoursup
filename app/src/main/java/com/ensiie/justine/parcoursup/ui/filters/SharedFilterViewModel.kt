@@ -21,7 +21,6 @@ class SharedFilterViewModel : ViewModel() {
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
 
-    // Individual state flows for convenient access using map and stateIn
     val locationFilter: StateFlow<LocationFilter?> =
         _filterState.map { it.locationFilter }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -38,8 +37,8 @@ class SharedFilterViewModel : ViewModel() {
         _filterState.map { it.searchQuery }
             .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-    val pendingCurrentLocation: StateFlow<Pair<Double, Double>?> =
-        _filterState.map { it.pendingCurrentLocation }
+    val currentLocation: StateFlow<Pair<Double, Double>?> =
+        _filterState.map { it.currentLocation }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /**
@@ -53,25 +52,23 @@ class SharedFilterViewModel : ViewModel() {
      * Clear location filter
      */
     fun clearLocationFilter() {
-        _filterState.update { it.copy(locationFilter = null, pendingCurrentLocation = null) }
+        _filterState.update { it.copy(locationFilter = null, currentLocation = null) }
     }
 
-    /**
-     * Set pending current location (used before validation)
+    /**     * Set pending current location (before user confirms with radius)
      */
-    fun setPendingCurrentLocation(location: Pair<Double, Double>?) {
-        _filterState.update { it.copy(pendingCurrentLocation = location) }
+    fun setCurrentLocation(latitude: Double, longitude: Double) {
+        _filterState.update { it.copy(currentLocation = Pair(latitude, longitude)) }
     }
 
     /**
      * Clear pending current location
      */
-    fun clearPendingCurrentLocation() {
-        _filterState.update { it.copy(pendingCurrentLocation = null) }
+    fun clearCurrentLocation() {
+        _filterState.update { it.copy(currentLocation = null) }
     }
 
-    /**
-     * Toggle a filiere selection
+    /**     * Toggle a filiere selection
      */
     fun toggleFiliere(filiere: String) {
         _filterState.update { currentState ->

@@ -48,7 +48,6 @@
     <string name="retry">Réessayer</string>
 
     <string name="establishment_unknown">Établissement inconnu</string>
-    <string name="formation">Formation</string>
     <string name="not_available">N/A</string>
     <string name="bac_autre">Autres</string>
     <string name="select_formation">Sélectionner un type de formation</string>
@@ -65,8 +64,8 @@
     <string name="filter_by_location">Filtrer par localisation</string>
     <string name="remove_location_filter">Retirer le filtre de localisation</string>
 
-    <string name="filter_by_filiere_count">Filtrer par filière (%1$d)</string>
-    <string name="filter_by_filiere">Filtrer par filière</string>
+    <string name="filter_by_field_count">Filtrer par filière (%1$d)</string>
+    <string name="filter_by_field">Filtrer par filière</string>
     <string name="filter_by_type">Filtrer par type</string>
     <string name="filter_by_type_count">Filtrer par type (%1$d)</string>
 
@@ -74,4 +73,5 @@
     <string name="remove_current_location">Supprimer ma position</string>
     <string name="get_current_location">Utiliser ma position</string>
     <string name="unknown_city">Ville inconnu</string>
+    <string name="formation">Formation</string>
 </resources>

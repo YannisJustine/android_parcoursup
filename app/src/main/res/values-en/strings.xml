@@ -47,8 +47,27 @@
     <string name="back">Back</string>
 
     <string name="establishment_unknown">Unknown establishment</string>
+    <string name="get_current_location">Get current location</string>
     <string name="formation">Course</string>
     <string name="not_available">N/A</string>
     <string name="bac_autre">Others</string>
     <string name="unknown_city">Unknown city</string>
+    <string name="select_formation">Select formation type</string>
+    <string name="contact_information">Establishment contact</string>
+    <string name="search_radius">Search radius</string>
+    <string name="search_city_placeholder">Select a city</string>
+    <string name="cancel">Cancel</string>
+    <string name="validate">Validate</string>
+    <string name="no_formations_found">No formatio</string>
+    <string name="clear_all">Clear all</string>
+    <string name="current_location">Current location</string>
+    <string name="radius_km">Radius: %1$d km</string>
+    <string name="filter_by_location">Filter by location</string>
+    <string name="remove_location_filter">Remove location filter</string>
+    <string name="filter_by_field_count">Filter by field (%1$d)</string>
+    <string name="filter_by_field">Filter by field</string>
+    <string name="filter_by_type">Filter by type</string>
+    <string name="filter_by_type_count">Filter by type (%1$d)</string>
+    <string name="scroll_to_top">Scroll to top</string>
+    <string name="remove_current_location">Remove current location</string>
 </resources>

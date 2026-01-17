@@ -20,16 +20,21 @@ Application Android moderne pour consulter les formations Parcoursup avec statis
 - Clic sur un marqueur pour acceder aux details de la formation
 - Navigation fluide vers les pages de detail
 
-### 4. Details d'une Formation
-- Informations completes sur l'etablissement et la formation
+### 4. Détails d'une Formation
+- Informations complètes sur l'établissement et la formation
 - Statistiques 2024 :
-  - Capacite, nombre de voeux, admis
-  - Taux d'acces
-  - Repartition par genre (pourcentage et nombre)
-  - Repartition par bac d'origine (General, Tech, Pro)
-  - Mentions au bac des admis
-- Carte individuelle avec localisation precise de l'etablissement
+   - Capacité, nombre de vœux, admis
+   - Taux d'accès
+   - Répartition par genre (pourcentage et nombre)
+   - Répartition par bac d'origine (Général, Tech, Pro)
+   - Mentions au bac des admis
+- Carte individuelle avec localisation précise de l'établissement
 - Bouton favori pour sauvegarder la formation
+
+### 5. Enregistrement d'écran (Screen Recording)
+- Nouvelle fonctionnalité permettant d'enregistrer l'écran de l'application pour partager une navigation ou une démonstration.
+- Accessible depuis le menu principal ou via un bouton dédié sur certains écrans.
+- Les vidéos sont sauvegardées dans la galerie de l'appareil.
 
 ## Architecture
 
@@ -75,14 +80,28 @@ app/src/main/java/com/ensiie/justine/parcoursup/
 ### API Parcoursup
 - Base URL : `https://data.enseignementsup-recherche.gouv.fr/api/records/1.0/`
 - Datasets :
-  - `fr-esr-parcoursup` : Donnees des formations
-  - Annee 2024 (session = 2024)
+   - `fr-esr-parcoursup` : Données des formations
+   - Année 2024 (session = 2024)
+
+### API Adresse
+- Base URL : `https://api-adresse.data.gouv.fr/`
+- Endpoints :
+   - Recherche de ville par nom
+   - Géocodage inverse (coordonnées GPS vers adresse)
+
+### API Établissements
+- Base URL : `https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/`
+- Datasets :
+   - `fr-esr-principaux-etablissements-enseignement-superieur` : Établissements du supérieur
+   - `fr-en-annuaire-education` : Annuaire de l'éducation
 
 ### Endpoints principaux
-- Recuperation des filieres
-- Formations par filiere avec filtres
+- Récupération des filières
+- Formations par filière avec filtres
 - Recherche de formations
-- Donnees geolocalisees pour la carte
+- Données géolocalisées pour la carte
+- Recherche d'adresse et de ville
+- Informations détaillées sur les établissements
 
 ## Lancement de l'application
 

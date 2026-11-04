@@ -6,6 +6,7 @@ import com.ensiie.justine.parcoursup.data.model.Formation
 import com.ensiie.justine.parcoursup.data.model.FormationMap
 import com.ensiie.justine.parcoursup.data.model.toFavoriteFormation
 import com.ensiie.justine.parcoursup.data.network.ParcoursupApiService
+import com.ensiie.justine.parcoursup.data.network.ParcoursupConfig
 import com.ensiie.justine.parcoursup.utils.LocationFilter
 import kotlinx.coroutines.flow.Flow
 
@@ -24,7 +25,7 @@ class FormationRepository(
         offset: Int = 0,
         limit: Int = 50
     ): Result<List<Formation>> = try {
-        val whereConditions = mutableListOf("session=2024")
+        val whereConditions = mutableListOf(ParcoursupConfig.SESSION_FILTER)
 
         name?.takeIf { it.isNotBlank() }?.let {
             whereConditions.add("search(g_ea_lib_vx,\"%$it%\")")
@@ -58,7 +59,7 @@ class FormationRepository(
         location: LocationFilter? = null,
     ): Result<List<FormationMap>> = try {
         val whereConditions =
-            mutableListOf("session=2024 and g_olocalisation_des_formations IS NOT NULL")
+            mutableListOf("${ParcoursupConfig.SESSION_FILTER} and g_olocalisation_des_formations IS NOT NULL")
 
         location?.let {
             val radiusMeters = it.radiusKm * 1000
@@ -128,7 +129,7 @@ class FormationRepository(
         val currentFormation = getFormationById(currentFormationId).getOrNull()
             ?: return Result.success(emptyList())
 
-        val whereConditions = mutableListOf("session=2024")
+        val whereConditions = mutableListOf(ParcoursupConfig.SESSION_FILTER)
 
         whereConditions.add("cod_aff_form!='$currentFormationId'")
 

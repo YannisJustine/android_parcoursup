@@ -15,7 +15,7 @@ interface ParcoursupApiService {
 
     @GET("fr-esr-parcoursup/records")
     suspend fun searchFormations(
-        @Query("where") where: String = "session=2024",
+        @Query("where") where: String = ParcoursupConfig.SESSION_FILTER,
         @Query("limit") limit: Int = 50,
         @Query("offset") offset: Int = 0
     ): ApiResponse
@@ -29,11 +29,16 @@ interface ParcoursupApiService {
     @GET("fr-esr-parcoursup/records")
     suspend fun getFilieres(
         @Query("select") select: String = "fili",
-        @Query("where") where: String = "session=2024",
+        @Query("where") where: String = ParcoursupConfig.SESSION_FILTER,
         @Query("group_by") groupBy: String = "fili",
         @Query("limit") limit: Int = 100
     ): FiliereGroupResponse
 
-    @GET("fr-esr-parcoursup/records?select=contrat_etab&where=session=2024&group_by=contrat_etab&limit=100")
-    suspend fun getContratsEtab(): ContratEtabResponse
+    @GET("fr-esr-parcoursup/records")
+    suspend fun getContratsEtab(
+        @Query("select") select: String = "contrat_etab",
+        @Query("where") where: String = ParcoursupConfig.SESSION_FILTER,
+        @Query("group_by") groupBy: String = "contrat_etab",
+        @Query("limit") limit: Int = 100
+    ): ContratEtabResponse
 }
